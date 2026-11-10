@@ -9,6 +9,8 @@ import { Registry } from './registry';
 import { buildServer } from './server';
 import { Settler } from './settler';
 import { connectChain } from './solana';
+import { GeminiPublic } from './venue/gemini-public';
+import { CombinedMarkets } from './venue/markets';
 import { MockGemini } from './venue/mock';
 import type { MarketSource, Venue } from './venue/types';
 
@@ -22,14 +24,19 @@ async function main() {
   const chain = await connectChain(env);
   log.info({ cluster: chain.cluster, programId: chain.programId.toBase58(), operator: chain.operator.publicKey.toBase58() }, 'connected');
 
-  if (env.GEMINI_MODE !== 'mock' || env.RESOLUTION_SOURCE !== 'mock') {
-    // Phase B adds the Gemini sandbox trading client and production/sandbox resolution sources.
-    throw new Error('Only GEMINI_MODE=mock and RESOLUTION_SOURCE=mock are implemented so far (Phase B adds sandbox/production).');
+  if (env.GEMINI_MODE !== 'mock' || env.RESOLUTION_SOURCE === 'sandbox') {
+    // Phase B (milestone 6) adds the signed Gemini sandbox trading client.
+    throw new Error('GEMINI_MODE=sandbox / RESOLUTION_SOURCE=sandbox are not implemented yet (Phase B). Use GEMINI_MODE=mock.');
   }
-  const mock = new MockGemini(priceToMicros(String(env.MOCK_DEFAULT_ASK)));
+  // Public market data is read from production Gemini (read-only, allowed); trading stays on the mock book.
+  const gemini = new GeminiPublic(env.GEMINI_PUBLIC_BASE_URL);
+  const mock = new MockGemini(priceToMicros(String(env.MOCK_DEFAULT_ASK)), async (symbol) => {
+    const m = symbol.startsWith('GEMI-') ? await gemini.getMarket(symbol) : null;
+    return m?.yesAsk ? priceToMicros(m.yesAsk) : null;
+  });
   const venue: Venue = mock;
-  const markets: MarketSource = mock;
-  log.warn('Gemini venue and market resolution are SIMULATED (mock mode)');
+  const markets: MarketSource = new CombinedMarkets(mock, gemini, env.RESOLUTION_SOURCE);
+  log.warn({ resolution: env.RESOLUTION_SOURCE }, 'hedges go to the SIMULATED Gemini order book (GEMINI_MODE=mock)');
 
   const repo = new Repo(resolveFromRoot(env.DATABASE_PATH));
   const registry = new Registry(chain);

@@ -28,7 +28,14 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
   private readonly markets = new Map<string, MockMarket>();
   private readonly orders = new Map<string, OrderResult>();
 
-  constructor(private readonly defaultAskMicros: bigint) {
+  /**
+   * @param priceHint optional live price for symbols the mock doesn't know yet (e.g. the real Gemini ask), so a
+   *   SIMULATED hedge on a real market starts at a realistic price.
+   */
+  constructor(
+    private readonly defaultAskMicros: bigint,
+    private readonly priceHint?: (symbol: string) => Promise<bigint | null>,
+  ) {
     super();
     for (const m of seedMarkets(defaultAskMicros)) this.markets.set(m.symbol, m);
   }
@@ -51,8 +58,19 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
     return m;
   }
 
+  /** Create an unknown symbol's book, seeded from the price hint when available. */
+  private async ensure(symbol: string): Promise<MockMarket> {
+    if (!this.markets.has(symbol) && this.priceHint) {
+      const hint = await this.priceHint(symbol).catch(() => null);
+      const m = this.market(symbol);
+      if (hint && hint > 0n && hint < 1_000_000n) m.askMicros = (hint / TICK) * TICK;
+      return m;
+    }
+    return this.market(symbol);
+  }
+
   async quote(symbol: string): Promise<MarketQuote> {
-    const m = this.market(symbol);
+    const m = await this.ensure(symbol);
     if (m.outcome) return { symbol, askMicros: null, bidMicros: null, tickMicros: TICK };
     return { symbol, askMicros: m.askMicros, bidMicros: m.askMicros > SPREAD ? m.askMicros - SPREAD : null, tickMicros: TICK };
   }
@@ -60,7 +78,7 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
   async buyYes(p: { symbol: string; contracts: number; limitPriceMicros: bigint; clientOrderId: string }): Promise<OrderResult> {
     const existing = this.orders.get(p.clientOrderId);
     if (existing) return existing;
-    const m = this.market(p.symbol);
+    const m = await this.ensure(p.symbol);
     const orderId = `SIM-${randomUUID().slice(0, 8)}`;
     let res: OrderResult;
     if (m.outcome) {

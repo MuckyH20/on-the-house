@@ -77,7 +77,26 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     simulated,
   }));
 
-  app.get('/markets', async () => ({ markets: await markets.listMarkets(), simulated: markets.simulated }));
+  app.get('/markets', async (req: FastifyRequest<{ Querystring: { q?: string; category?: string; limit?: string } }>) => {
+    const now = new Date().toISOString();
+    const q = req.query.q?.trim().toLowerCase();
+    const cat = req.query.category?.trim().toLowerCase();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 500);
+    const all = (await markets.listMarkets()).filter(
+      (m) =>
+        m.status === 'open' &&
+        (!m.closesAt || m.closesAt > now) &&
+        (!q || `${m.title} ${m.symbol}`.toLowerCase().includes(q)) &&
+        (!cat || m.category.toLowerCase() === cat),
+    );
+    const categories = [...new Set(all.map((m) => m.category))].sort();
+    return { markets: all.slice(0, limit), total: all.length, categories, simulated: markets.simulated };
+  });
+
+  app.get('/markets/:symbol', async (req: FastifyRequest<{ Params: { symbol: string } }>, reply) => {
+    const m = await marketFor(req.params.symbol);
+    return m ?? notFound(reply, 'market');
+  });
 
   app.get('/campaigns', async (): Promise<{ campaigns: CampaignSummary[] }> => {
     const out: CampaignSummary[] = [];

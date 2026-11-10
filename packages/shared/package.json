@@ -6,6 +6,8 @@
   "description": "Code shared by the engine, web app and scripts: env validation, money math, PDAs, IDL, transaction builders, API types.",
   "exports": {
     ".": "./src/index.ts",
+    "./program": "./src/program.ts",
+    "./api": "./src/api.ts",
     "./node": "./src/node/index.ts",
     "./idl/on_the_house.json": "./src/idl/on_the_house.json"
   },

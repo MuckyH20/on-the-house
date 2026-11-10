@@ -1,3 +1,6 @@
+# Program tests run in-process with LiteSVM (cargo test), so no local validator is needed.
+skip_local_validator = true
+
 [toolchain]
 anchor_version = "1.2.2"
 solana_version = "4.1.2"
@@ -22,8 +25,6 @@ wallet = ".keys/operator.json"
 idls = "packages/shared/src/idl/"
 types = "packages/shared/src/idl/"
 
-# Program tests run in-process with LiteSVM (cargo test), so no local validator is needed.
-skip_local_validator = true
 
 [scripts]
 test = "cargo test -p on_the_house -- --test-threads=4"

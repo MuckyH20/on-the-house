@@ -1,0 +1,182 @@
+/**
+ * Engine HTTP API contract (consumed by the web app and scripts).
+ * All USDC amounts are base-unit decimal strings; prices are dollars-per-$1-contract strings ("0.27")
+ * plus integer micro-dollar strings ("270000").
+ */
+import type { CampaignStatusName, CampaignView, OthEventName, OutcomeName } from './program';
+
+export type { CampaignStatusName, CampaignView, OthEventName, OutcomeName };
+
+export interface SimulatedFlags {
+  /** Hedges are placed on the in-memory mock order book (GEMINI_MODE=mock). */
+  gemini: boolean;
+  /** Market resolution comes from the mock admin endpoint (RESOLUTION_SOURCE=mock). */
+  resolution: boolean;
+}
+
+export interface EngineInfo {
+  ok: true;
+  cluster: 'devnet' | 'localnet';
+  programId: string;
+  usdcMint: string;
+  treasury: string;
+  operator: string;
+  platformMarginBps: number;
+  geminiMode: 'mock' | 'sandbox';
+  ingestMode: 'poll' | 'quicknode';
+  resolutionSource: 'mock' | 'production' | 'sandbox';
+  simulated: SimulatedFlags;
+}
+
+export type MarketStatus = 'open' | 'closed' | 'resolved';
+
+export interface MarketSummary {
+  /** Instrument symbol hedges are bought on (the YES contract). */
+  symbol: string;
+  /** Venue event identifier, when the venue groups contracts into events. */
+  eventId: string | null;
+  /** Venue title, e.g. "BTC above $100,000 on Nov 20, 3:00 PM ET?" */
+  title: string;
+  /** Plain-language condition for customers: "Bitcoin is above $100,000 at 3:00 PM ET on Nov 20". */
+  condition: string;
+  category: string;
+  yesAsk: string | null;
+  yesBid: string | null;
+  /** When trading closes / the event resolves (ISO 8601). */
+  closesAt: string | null;
+  status: MarketStatus;
+  outcome: 'yes' | 'no' | null;
+  /** True for markets that only exist in the mock venue. */
+  simulated: boolean;
+  source: 'gemini' | 'mock';
+}
+
+export interface Quote {
+  campaign: string;
+  marketSymbol: string;
+  yesAsk: string | null;
+  askMicros: string | null;
+  /** Premium as bps of the sale at the live price (refund_bps × ask × (1 + margin)). */
+  premiumBps: number | null;
+  refundBps: number;
+  maxPremiumBps: number;
+  /** Highest YES price at which this promo stays within the merchant's max cost per sale. */
+  maxPriceMicros: string;
+  /** True when sales are paused on-chain, by the hedger, or because the price is above the cap. */
+  paused: boolean;
+  available: boolean;
+  /** Plain-language reason when not available. */
+  reason: string | null;
+  simulated: SimulatedFlags;
+  /** Present when `?amount=` (base units) was passed. */
+  amount?: string;
+  premium?: string;
+  refund?: string;
+  quotedAt: number;
+}
+
+export type FillStatus = 'placed' | 'filled' | 'recorded' | 'failed' | 'cancelled';
+
+export interface HedgeFill {
+  id: string;
+  campaign: string;
+  /** Venue order id (Gemini order id, or a mock id when simulated). */
+  orderId: string;
+  clientOrderId: string;
+  symbol: string;
+  contracts: number;
+  priceMicros: string;
+  /** record_hedge transaction signature once the fill is recorded on-chain. */
+  recordTx: string | null;
+  status: FillStatus;
+  simulated: boolean;
+  error: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface StoredEvent {
+  signature: string;
+  index: number;
+  slot: number;
+  name: OthEventName;
+  campaign: string | null;
+  data: Record<string, string | number | boolean>;
+  blockTime: number | null;
+  source: 'ws' | 'backfill' | 'quicknode';
+  receivedAt: number;
+}
+
+export type HedgerStateName = 'idle' | 'hedging' | 'retrying' | 'failed' | 'stopped';
+
+export interface HedgerStatus {
+  state: HedgerStateName;
+  /** Contracts ordered but not yet recorded on-chain. */
+  pendingContracts: number;
+  maxPriceMicros: string;
+  lastError: string | null;
+  /** True when the hedger paused sales because it could not fill under the max price. */
+  pausedByHedger: boolean;
+}
+
+export type SettlementStateName = 'waiting' | 'settling' | 'funding' | 'paying' | 'done' | 'failed';
+
+export interface SettlementStatus {
+  state: SettlementStateName;
+  outcome: 'yes' | 'no' | null;
+  holders: number;
+  paid: number;
+  lastError: string | null;
+}
+
+export interface CampaignState {
+  campaign: CampaignView;
+  market: MarketSummary | null;
+  /** Refunds promised (on-chain liability), base units. */
+  promised: string;
+  /** Refunds covered (on-chain hedged_contracts × $1), base units. */
+  covered: string;
+  unhedged: string;
+  coverageBps: number;
+  fills: HedgeFill[];
+  /** Most recent first. */
+  events: StoredEvent[];
+  hedger: HedgerStatus;
+  settlement: SettlementStatus;
+  simulated: SimulatedFlags;
+  updatedAt: number;
+}
+
+export interface CampaignSummary {
+  campaign: CampaignView;
+  market: MarketSummary | null;
+  coverageBps: number;
+  hedger: HedgerStatus;
+  settlement: SettlementStatus;
+}
+
+export interface WalletPurchase {
+  signature: string;
+  amount: string;
+  premium: string;
+  refund: string;
+  at: number | null;
+}
+
+export interface WalletClaim {
+  campaign: string;
+  marketSymbol: string;
+  market: MarketSummary | null;
+  refundBps: number;
+  purchases: WalletPurchase[];
+  /** Refund still owed (on-chain claim balance). */
+  claimBalance: string;
+  /** Total refunds paid to this wallet. */
+  paidOut: string;
+  status: CampaignStatusName;
+  outcome: OutcomeName;
+}
+
+export interface ApiError {
+  error: string;
+}

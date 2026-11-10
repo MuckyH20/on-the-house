@@ -393,6 +393,8 @@ function normalize(value: unknown): string | number | boolean {
   return String(value);
 }
 
+const camel = (k: string) => k.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+
 /** Decode every on_the_house event in a transaction's log messages (Anchor `Program data:` logs). */
 export function decodeEvents(programId: PublicKey, logs: string[]): OthEvent[] {
   const parser = new EventParser(programId, new BorshCoder(IDL));
@@ -400,8 +402,10 @@ export function decodeEvents(programId: PublicKey, logs: string[]): OthEvent[] {
   let index = 0;
   for (const ev of parser.parseLogs(logs)) {
     const data: OthEvent['data'] = {};
-    for (const [k, v] of Object.entries(ev.data as Record<string, unknown>)) data[k] = normalize(v);
-    out.push({ name: ev.name as OthEventName, index: index++, data });
+    // The raw (snake_case) IDL decodes to `PurchaseEvent` / `liability_after`; expose camelCase everywhere.
+    for (const [k, v] of Object.entries(ev.data as Record<string, unknown>)) data[camel(k)] = normalize(v);
+    const name = (ev.name.charAt(0).toLowerCase() + ev.name.slice(1)) as OthEventName;
+    out.push({ name, index: index++, data });
   }
   return out;
 }

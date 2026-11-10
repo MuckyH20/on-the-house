@@ -1,0 +1,29 @@
+[toolchain]
+anchor_version = "1.2.2"
+solana_version = "4.1.2"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+on_the_house = "4qfLMXZTmKt71eDH4S3VNSDCRFPX7qxpPk3WZZgt2PM2"
+
+[programs.devnet]
+on_the_house = "4qfLMXZTmKt71eDH4S3VNSDCRFPX7qxpPk3WZZgt2PM2"
+
+[provider]
+# Devnet only. The operator is also the program's upgrade authority / config admin.
+cluster = "devnet"
+wallet = ".keys/operator.json"
+
+[workspace]
+# `anchor build` copies the IDL + TS types here so the engine, app and scripts never need the Rust toolchain.
+idls = "packages/shared/src/idl/"
+types = "packages/shared/src/idl/"
+
+# Program tests run in-process with LiteSVM (cargo test), so no local validator is needed.
+skip_local_validator = true
+
+[scripts]
+test = "cargo test -p on_the_house -- --test-threads=4"

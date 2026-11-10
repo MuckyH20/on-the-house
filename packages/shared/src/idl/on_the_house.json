@@ -1,0 +1,1887 @@
+{
+  "address": "4qfLMXZTmKt71eDH4S3VNSDCRFPX7qxpPk3WZZgt2PM2",
+  "metadata": {
+    "name": "on_the_house",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "On the House: event-contingent shop promos with non-transferable refund claims, hedged on prediction markets"
+  },
+  "instructions": [
+    {
+      "name": "cancel_campaign",
+      "docs": [
+        "Merchant or operator: cancel a campaign that has no sales."
+      ],
+      "discriminator": [
+        66,
+        10,
+        32,
+        138,
+        122,
+        36,
+        134,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "The campaign's merchant or the operator."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_claims",
+      "docs": [
+        "Permissionless crank after a No outcome (or a cancellation): burns worthless claims."
+      ],
+      "discriminator": [
+        118,
+        193,
+        228,
+        27,
+        108,
+        156,
+        187,
+        106
+      ],
+      "accounts": [
+        {
+          "name": "customer"
+        },
+        {
+          "name": "campaign"
+        },
+        {
+          "name": "claim_mint",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "customer_claim",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "customer"
+              },
+              {
+                "kind": "account",
+                "path": "claim_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "claim_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "claim_token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_campaign",
+      "docs": [
+        "Signed by the merchant. Creates the campaign, its claim mint and its refund vault."
+      ],
+      "discriminator": [
+        111,
+        131,
+        187,
+        98,
+        160,
+        193,
+        114,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Pays rent for the campaign, claim mint and refund vault (the operator in the demo)."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "merchant",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "arg",
+                "path": "params.campaign_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint"
+        },
+        {
+          "name": "merchant_usdc",
+          "docs": [
+            "Receives the merchant's share of every sale."
+          ]
+        },
+        {
+          "name": "claim_mint",
+          "docs": [
+            "and PermanentDelegate extensions (Anchor's `init` constraints cannot add NonTransferable).",
+            "The seeds constraint pins the address."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              }
+            ]
+          }
+        },
+        {
+          "name": "refund_vault",
+          "docs": [
+            "Holds the USDC that pays refunds; the campaign PDA is its authority."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  102,
+                  117,
+                  110,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_token_program"
+        },
+        {
+          "name": "claim_token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "CreateCampaignParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "docs": [
+        "One-time setup. Only the program's upgrade authority may call it."
+      ],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint",
+          "docs": [
+            "The campaign currency (USDC or the mock dUSDC)."
+          ]
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "Platform treasury token account: receives every premium."
+          ]
+        },
+        {
+          "name": "program",
+          "docs": [
+            "\"Admin only\": the signer must be this program's upgrade authority, so nobody can",
+            "front-run the deployer and take over the config."
+          ],
+          "address": "4qfLMXZTmKt71eDH4S3VNSDCRFPX7qxpPk3WZZgt2PM2"
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "usdc_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "operator",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "payout",
+      "docs": [
+        "Permissionless crank after a Yes outcome: burns the customer's claims, pays the same in USDC."
+      ],
+      "discriminator": [
+        149,
+        140,
+        194,
+        236,
+        174,
+        189,
+        6,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "docs": [
+            "Anyone may crank. Pays rent only if the customer's USDC account has to be (re)created."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "customer",
+          "docs": [
+            "validated as this wallet's associated token accounts."
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "usdc_mint",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "claim_mint",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "customer_claim",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "customer"
+              },
+              {
+                "kind": "account",
+                "path": "claim_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "claim_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "refund_vault",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "customer_usdc",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "customer"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_token_program"
+        },
+        {
+          "name": "claim_token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "purchase",
+      "docs": [
+        "Signed by the customer and the operator (fee payer, price authority)."
+      ],
+      "discriminator": [
+        21,
+        93,
+        113,
+        154,
+        193,
+        160,
+        242,
+        168
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "docs": [
+            "Fee payer and rent payer (customers need zero SOL). Its signature also authorizes the premium."
+          ],
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "customer",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "usdc_mint",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "customer_usdc",
+          "writable": true
+        },
+        {
+          "name": "merchant_usdc",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "treasury",
+          "writable": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "claim_mint",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "customer_claim",
+          "docs": [
+            "The customer's (non-transferable) claim account, created on first purchase at the operator's expense."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "customer"
+              },
+              {
+                "kind": "account",
+                "path": "claim_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "claim_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_token_program"
+        },
+        {
+          "name": "claim_token_program",
+          "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "premium",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "record_hedge",
+      "docs": [
+        "Operator only: record contracts bought on the prediction market (proof of hedge)."
+      ],
+      "discriminator": [
+        124,
+        56,
+        44,
+        65,
+        31,
+        31,
+        117,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "contracts_added",
+          "type": "u64"
+        },
+        {
+          "name": "avg_price_micros",
+          "type": "u64"
+        },
+        {
+          "name": "order_ref_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "docs": [
+        "Merchant or operator: pause / resume sales."
+      ],
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": [
+            "The campaign's merchant or the operator."
+          ],
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "settle",
+      "docs": [
+        "Operator only, after the market resolves."
+      ],
+      "discriminator": [
+        175,
+        42,
+        185,
+        87,
+        144,
+        131,
+        102,
+        212
+      ],
+      "accounts": [
+        {
+          "name": "operator",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "outcome",
+          "type": {
+            "defined": {
+              "name": "Outcome"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "docs": [
+        "Admin only: rotate the operator and/or treasury."
+      ],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury"
+        }
+      ],
+      "args": [
+        {
+          "name": "operator",
+          "type": "pubkey"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Campaign",
+      "discriminator": [
+        50,
+        40,
+        49,
+        11,
+        157,
+        220,
+        229,
+        192
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "CampaignCancelled",
+      "discriminator": [
+        121,
+        171,
+        21,
+        55,
+        56,
+        234,
+        121,
+        44
+      ]
+    },
+    {
+      "name": "CampaignCreated",
+      "discriminator": [
+        9,
+        98,
+        69,
+        61,
+        53,
+        131,
+        64,
+        152
+      ]
+    },
+    {
+      "name": "CampaignPauseChanged",
+      "discriminator": [
+        78,
+        182,
+        121,
+        117,
+        37,
+        250,
+        205,
+        111
+      ]
+    },
+    {
+      "name": "CampaignSettled",
+      "discriminator": [
+        117,
+        145,
+        212,
+        210,
+        201,
+        63,
+        135,
+        24
+      ]
+    },
+    {
+      "name": "ClaimsClosed",
+      "discriminator": [
+        218,
+        185,
+        246,
+        42,
+        164,
+        178,
+        89,
+        108
+      ]
+    },
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "ConfigUpdated",
+      "discriminator": [
+        40,
+        241,
+        230,
+        122,
+        11,
+        19,
+        198,
+        194
+      ]
+    },
+    {
+      "name": "HedgeRecorded",
+      "discriminator": [
+        139,
+        25,
+        204,
+        171,
+        216,
+        23,
+        24,
+        96
+      ]
+    },
+    {
+      "name": "PayoutEvent",
+      "discriminator": [
+        84,
+        234,
+        195,
+        72,
+        143,
+        79,
+        70,
+        82
+      ]
+    },
+    {
+      "name": "PurchaseEvent",
+      "discriminator": [
+        229,
+        118,
+        246,
+        164,
+        59,
+        65,
+        116,
+        254
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Signer is not allowed to perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidUsdcMint",
+      "msg": "The campaign currency must have 6 decimals"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidTreasury",
+      "msg": "Treasury must be a token account for the configured USDC mint"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidMerchantAccount",
+      "msg": "Merchant payout account must hold the configured USDC mint"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidRefundBps",
+      "msg": "Refund must be between 1 and 10000 bps"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidMaxPremiumBps",
+      "msg": "Max cost per sale must be at most 10000 bps"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidMarketSymbol",
+      "msg": "Market symbol must be 1 to 64 bytes"
+    },
+    {
+      "code": 6007,
+      "name": "InvalidDeadline",
+      "msg": "Sales deadline must be in the future"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidLiabilityCap",
+      "msg": "Liability cap must be positive"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidMaxUnhedged",
+      "msg": "max_unhedged cannot exceed the liability cap"
+    },
+    {
+      "code": 6010,
+      "name": "CampaignNotOpen",
+      "msg": "Campaign is not open for sales"
+    },
+    {
+      "code": 6011,
+      "name": "SalesClosed",
+      "msg": "The sales window for this promo has closed"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidAmount",
+      "msg": "Amount must be positive"
+    },
+    {
+      "code": 6013,
+      "name": "PremiumTooHigh",
+      "msg": "Premium exceeds the merchant's maximum cost per sale"
+    },
+    {
+      "code": 6014,
+      "name": "RefundTooSmall",
+      "msg": "Refund rounds to zero for this amount"
+    },
+    {
+      "code": 6015,
+      "name": "LiabilityCapExceeded",
+      "msg": "This sale would exceed the campaign's liability cap"
+    },
+    {
+      "code": 6016,
+      "name": "UnhedgedLimitExceeded",
+      "msg": "This sale would leave more refunds unhedged than max_unhedged allows"
+    },
+    {
+      "code": 6017,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidContracts",
+      "msg": "contracts_added must be positive"
+    },
+    {
+      "code": 6019,
+      "name": "CampaignClosed",
+      "msg": "Campaign is already settled or cancelled"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidOutcome",
+      "msg": "Outcome must be Yes or No"
+    },
+    {
+      "code": 6021,
+      "name": "NotSettled",
+      "msg": "Campaign has not settled"
+    },
+    {
+      "code": 6022,
+      "name": "OutcomeNotYes",
+      "msg": "Campaign did not settle Yes; claims pay nothing"
+    },
+    {
+      "code": 6023,
+      "name": "ClaimsNotClosable",
+      "msg": "Claims can only be closed after a No outcome or a cancellation"
+    },
+    {
+      "code": 6024,
+      "name": "NothingToPay",
+      "msg": "This wallet holds no claims for the campaign"
+    },
+    {
+      "code": 6025,
+      "name": "CampaignHasSales",
+      "msg": "A campaign with sales cannot be cancelled; settle it instead"
+    }
+  ],
+  "types": [
+    {
+      "name": "Campaign",
+      "docs": [
+        "One promotion. PDA seeded by (`campaign`, merchant, campaign_id as u64 LE)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant_usdc",
+            "docs": [
+              "Where the merchant's share of each sale goes."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign_id",
+            "type": "u64"
+          },
+          {
+            "name": "market_symbol",
+            "docs": [
+              "Gemini prediction-market symbol whose YES outcome triggers refunds."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "refund_bps",
+            "docs": [
+              "Refund owed on YES, as bps of the sale amount."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "max_premium_bps",
+            "docs": [
+              "The merchant's maximum cost per sale (premium), as bps of the sale amount."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "liability_cap",
+            "docs": [
+              "Maximum total refunds that may ever be promised (USDC base units)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_unhedged",
+            "docs": [
+              "Maximum refunds promised but not yet covered by hedged contracts (USDC base units)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sales_deadline",
+            "docs": [
+              "Unix timestamp after which purchases are rejected."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "CampaignStatus"
+              }
+            }
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "liability",
+            "docs": [
+              "Total refunds promised (USDC base units) == claim mint supply before payouts."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "hedged_contracts",
+            "docs": [
+              "Contracts bought on the prediction market; each covers CONTRACT_UNIT of liability."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "claim_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "refund_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_sales",
+            "type": "u64"
+          },
+          {
+            "name": "total_premium",
+            "type": "u64"
+          },
+          {
+            "name": "total_paid_out",
+            "type": "u64"
+          },
+          {
+            "name": "purchase_count",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "settled_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "claim_mint_bump",
+            "type": "u8"
+          },
+          {
+            "name": "refund_vault_bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "by",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign_id",
+            "type": "u64"
+          },
+          {
+            "name": "market_symbol",
+            "type": "string"
+          },
+          {
+            "name": "refund_bps",
+            "type": "u16"
+          },
+          {
+            "name": "max_premium_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liability_cap",
+            "type": "u64"
+          },
+          {
+            "name": "max_unhedged",
+            "type": "u64"
+          },
+          {
+            "name": "sales_deadline",
+            "type": "i64"
+          },
+          {
+            "name": "merchant_usdc",
+            "type": "pubkey"
+          },
+          {
+            "name": "claim_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "refund_vault",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignPauseChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "by",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "outcome",
+            "type": {
+              "defined": {
+                "name": "Outcome"
+              }
+            }
+          },
+          {
+            "name": "liability",
+            "type": "u64"
+          },
+          {
+            "name": "hedged_contracts",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClaimsClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "customer",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "docs": [
+        "Global settings. One per program (PDA seeded by `config`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "docs": [
+              "The program's upgrade authority at initialization; may rotate the operator / treasury."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "docs": [
+              "Prices sales (co-signs every purchase), records hedges, settles campaigns."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "docs": [
+              "Token account that receives every premium."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "docs": [
+              "Campaign currency (USDC or the mock dUSDC); equals `treasury.mint`."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "operator",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateCampaignParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign_id",
+            "docs": [
+              "Merchant-chosen id; the campaign PDA is seeded by (merchant, campaign_id)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "market_symbol",
+            "docs": [
+              "Gemini prediction-market symbol (max 64 bytes)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "refund_bps",
+            "docs": [
+              "Refund on YES, in bps of the sale (10_000 = everything free)."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "max_premium_bps",
+            "docs": [
+              "Merchant's maximum cost per sale, in bps of the sale."
+            ],
+            "type": "u16"
+          },
+          {
+            "name": "liability_cap",
+            "docs": [
+              "Maximum total refunds (USDC base units)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "max_unhedged",
+            "docs": [
+              "Maximum refunds promised but not yet hedged (USDC base units)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "sales_deadline",
+            "docs": [
+              "Unix timestamp after which sales are rejected."
+            ],
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "HedgeRecorded",
+      "docs": [
+        "The on-chain proof-of-hedge record."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "contracts_added",
+            "type": "u64"
+          },
+          {
+            "name": "hedged_contracts",
+            "type": "u64"
+          },
+          {
+            "name": "avg_price_micros",
+            "type": "u64"
+          },
+          {
+            "name": "order_ref_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "liability",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Outcome",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Yes"
+          },
+          {
+            "name": "No"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PayoutEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "customer",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_paid_out",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PurchaseEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "premium",
+            "type": "u64"
+          },
+          {
+            "name": "refund",
+            "type": "u64"
+          },
+          {
+            "name": "liability_after",
+            "type": "u64"
+          },
+          {
+            "name": "hedged_contracts",
+            "type": "u64"
+          }
+        ]
+      }
+    }
+  ],
+  "constants": [
+    {
+      "name": "CAMPAIGN_SEED",
+      "type": "bytes",
+      "value": "[99, 97, 109, 112, 97, 105, 103, 110]"
+    },
+    {
+      "name": "CLAIM_MINT_SEED",
+      "type": "bytes",
+      "value": "[99, 108, 97, 105, 109, 95, 109, 105, 110, 116]"
+    },
+    {
+      "name": "CONFIG_SEED",
+      "type": "bytes",
+      "value": "[99, 111, 110, 102, 105, 103]"
+    },
+    {
+      "name": "CONTRACT_UNIT",
+      "docs": [
+        "One prediction-market contract pays $1 on YES = 1_000_000 USDC base units."
+      ],
+      "type": "u64",
+      "value": "1000000"
+    },
+    {
+      "name": "REFUND_VAULT_SEED",
+      "type": "bytes",
+      "value": "[114, 101, 102, 117, 110, 100, 95, 118, 97, 117, 108, 116]"
+    }
+  ]
+}

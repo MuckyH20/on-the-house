@@ -1,0 +1,29 @@
+{
+  "name": "@oth/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Devnet setup, QuickNode Stream creation and the end-to-end demo.",
+  "scripts": {
+    "setup:devnet": "tsx src/setup-devnet.ts",
+    "create:stream": "tsx src/create-stream.ts",
+    "demo:e2e": "tsx src/demo-e2e.ts",
+    "check:env": "tsx src/check-env.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo \"(scripts have no unit tests; run pnpm demo:e2e)\""
+  },
+  "dependencies": {
+    "@anchor-lang/core": "1.2.2",
+    "@oth/shared": "workspace:*",
+    "@solana/spl-token": "0.4.15",
+    "@solana/web3.js": "1.99.0",
+    "bn.js": "5.2.5",
+    "tsx": "4.23.15",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/bn.js": "5.2.0",
+    "@types/node": "26.6.6",
+    "typescript": "5.9.3"
+  }
+}

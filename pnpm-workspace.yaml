@@ -1,0 +1,17 @@
+packages:
+  - app
+  - engine
+  - scripts
+  - packages/*
+
+# pnpm 10 blocks dependency build scripts unless they are allow-listed here.
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - bigint-buffer
+  - bufferutil
+  - utf-8-validate
+
+# One copy of web3.js v1 everywhere (PublicKey instanceof checks break with duplicates).
+overrides:
+  '@solana/web3.js': 1.99.0

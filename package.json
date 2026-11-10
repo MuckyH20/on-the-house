@@ -1,0 +1,25 @@
+{
+  "name": "on-the-house",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Event-contingent shop promos (\"free if BTC is above $X at 3 PM\"), hedged on Gemini prediction markets and settled on Solana.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.34.9",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "dev:engine": "pnpm --filter @oth/engine dev",
+    "dev:app": "pnpm --filter @oth/app dev",
+    "program:build": "anchor build && node scripts/sync-idl.mjs",
+    "program:test": "anchor build && node scripts/sync-idl.mjs && cargo test -p on_the_house -- --test-threads=4",
+    "sync:idl": "node scripts/sync-idl.mjs",
+    "setup:devnet": "pnpm --filter @oth/scripts setup:devnet",
+    "create:stream": "pnpm --filter @oth/scripts create:stream",
+    "demo:e2e": "pnpm --filter @oth/scripts demo:e2e",
+    "check:env": "pnpm --filter @oth/scripts check:env"
+  }
+}

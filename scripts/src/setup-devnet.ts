@@ -100,6 +100,8 @@ async function main() {
   } else {
     usdcMint = await createMint(connection, operator, operator.publicKey, null, USDC_DECIMALS, undefined, { commitment: 'confirmed' }, TOKEN_PROGRAM_ID);
     console.log(`created mock dUSDC mint: ${usdcMint.toBase58()}`);
+    // Persist right away so a later failure (e.g. a rate-limited deploy) doesn't mint a second dUSDC on re-run.
+    updateEnvFile(join(ROOT, envFile), { USDC_MINT: usdcMint.toBase58() });
   }
 
   // ---- token accounts ----
@@ -130,7 +132,8 @@ async function main() {
       '--upgrade-authority', join(KEYS, 'operator.json'),
       '--url', rpcUrl,
       '--commitment', 'confirmed',
-      '--use-rpc',
+      // Writes go straight to validators (TPU/QUIC) by default; DEPLOY_USE_RPC=1 routes them through the RPC instead.
+      ...(process.env.DEPLOY_USE_RPC === '1' ? ['--use-rpc'] : []),
       '--max-sign-attempts', '60',
     ];
     let res = solanaCli(args);

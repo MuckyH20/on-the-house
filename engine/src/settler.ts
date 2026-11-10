@@ -4,11 +4,10 @@ import {
   createMintToCheckedInstruction,
   createTransferCheckedInstruction,
   getMint,
-  TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 import { USDC_DECIMALS, type EngineEnv } from '@oth/shared';
 import type { SettlementStatus } from '@oth/shared/api';
-import { campaignRefs, payoutIx, settleIx, type CampaignView } from '@oth/shared/program';
+import { campaignRefs, claimAta, payoutIx, settleIx, type CampaignView } from '@oth/shared/program';
 import type { Repo } from './db';
 import type { Registry } from './registry';
 import { sendIxs, type Chain } from './solana';
@@ -39,7 +38,11 @@ export class Settler {
   statusFor(c: CampaignView): SettlementStatus {
     const s = this.status.get(c.address);
     if (s) return s;
-    if (c.status === 'settled') return { state: 'done', outcome: c.outcome === 'none' ? null : c.outcome, holders: 0, paid: 0, lastError: null };
+    if (c.status === 'settled') {
+      // Not processed since (re)start: YES is only done once refunds paid out cover what was promised.
+      const unpaid = c.outcome === 'yes' && BigInt(c.totalPaidOut) < BigInt(c.liability);
+      return { state: unpaid ? 'paying' : 'done', outcome: c.outcome === 'none' ? null : c.outcome, holders: 0, paid: 0, lastError: null };
+    }
     return { state: 'waiting', outcome: null, holders: 0, paid: 0, lastError: null };
   }
 
@@ -128,31 +131,41 @@ export class Settler {
     this.set(c.address, { state: 'done', lastError: null });
   }
 
-  /** Wallets with a non-zero claim balance: token accounts of the claim mint, cross-checked with stored buyers. */
+  /**
+   * Wallets with a non-zero claim balance. Public devnet RPC refuses `getProgramAccounts` on the token programs, so:
+   *   candidates = buyers from stored PurchaseEvents ∪ owners of the claim mint's largest accounts
+   *   (`getTokenLargestAccounts`, which catches holders an ingest gap missed), then
+   *   each candidate's claim ATA is read directly (`getMultipleAccountsInfo`) for the authoritative balance.
+   */
   async claimHolders(c: CampaignView): Promise<{ owner: PublicKey; amount: bigint }[]> {
+    const { connection } = this.chain;
     const claimMint = new PublicKey(c.claimMint);
-    const accounts = await this.chain.connection.getProgramAccounts(TOKEN_2022_PROGRAM_ID, {
-      commitment: 'confirmed',
-      filters: [{ memcmp: { offset: 0, bytes: claimMint.toBase58() } }],
-    });
-    const byOwner = new Map<string, bigint>();
-    for (const a of accounts) {
-      const data = a.account.data;
-      if (data.length < 72) continue;
-      const owner = new PublicKey(data.subarray(32, 64)).toBase58();
-      const amount = data.readBigUInt64LE(64);
-      if (amount > 0n) byOwner.set(owner, (byOwner.get(owner) ?? 0n) + amount);
-    }
     const buyers = new Set(this.repo.eventsByName('purchaseEvent', c.address).map((e) => String(e.data.buyer)));
-    for (const owner of byOwner.keys()) {
-      if (!buyers.has(owner)) this.log.warn({ campaign: c.address, owner }, 'claim holder without a stored PurchaseEvent (ingest gap?) — paying anyway');
-    }
-    for (const b of buyers) {
-      if (!byOwner.has(b) && !this.repo.eventsByName('payoutEvent', c.address).some((e) => e.data.customer === b)) {
-        this.log.debug({ campaign: c.address, buyer: b }, 'buyer has no claim balance');
+    const candidates = new Set(buyers);
+    try {
+      const largest = await connection.getTokenLargestAccounts(claimMint, 'confirmed');
+      const accts = await connection.getMultipleAccountsInfo(largest.value.map((x) => x.address), 'confirmed');
+      for (const a of accts) {
+        if (!a || a.data.length < 72) continue;
+        const owner = new PublicKey(a.data.subarray(32, 64)).toBase58();
+        if (!buyers.has(owner)) this.log.warn({ campaign: c.address, owner }, 'claim holder without a stored PurchaseEvent (ingest gap?) — paying anyway');
+        candidates.add(owner);
       }
+    } catch (e) {
+      this.log.warn({ err: (e as Error).message, campaign: c.address }, 'getTokenLargestAccounts failed; using stored buyers only');
     }
-    return [...byOwner].map(([owner, amount]) => ({ owner: new PublicKey(owner), amount }));
+    const owners = [...candidates].map((o) => new PublicKey(o));
+    const out: { owner: PublicKey; amount: bigint }[] = [];
+    for (let i = 0; i < owners.length; i += 100) {
+      const chunk = owners.slice(i, i + 100);
+      const infos = await connection.getMultipleAccountsInfo(chunk.map((o) => claimAta(o, claimMint)), 'confirmed');
+      infos.forEach((info, j) => {
+        if (!info || info.data.length < 72) return;
+        const amount = info.data.readBigUInt64LE(64);
+        if (amount > 0n) out.push({ owner: chunk[j]!, amount });
+      });
+    }
+    return out;
   }
 
   private async fundVault(c: CampaignView, owed: bigint): Promise<void> {

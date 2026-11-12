@@ -11,6 +11,8 @@ import type { Venue } from './venue/types';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DEFAULT_TICK = 10_000n;
+/** Gemini accepts event-contract prices from $0.01 to $0.99 (a $1.00 limit is rejected with 422 Invalid price). */
+export const VENUE_MAX_PRICE_MICROS = 990_000n;
 
 /**
  * Keeps each campaign's hedged contracts ≥ ceil(liability / $1):
@@ -34,7 +36,8 @@ export class Hedger {
   ) {}
 
   maxPriceMicros(c: Pick<CampaignView, 'maxPremiumBps' | 'refundBps'>, tick = DEFAULT_TICK): bigint {
-    return floorToTick(maxHedgePriceMicros(c.maxPremiumBps, c.refundBps, this.env.PLATFORM_MARGIN_BPS), tick);
+    const p = floorToTick(maxHedgePriceMicros(c.maxPremiumBps, c.refundBps, this.env.PLATFORM_MARGIN_BPS), tick);
+    return p > VENUE_MAX_PRICE_MICROS ? VENUE_MAX_PRICE_MICROS : p;
   }
 
   pausedByHedger(campaign: string): boolean {

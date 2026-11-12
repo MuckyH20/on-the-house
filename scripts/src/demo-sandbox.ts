@@ -23,6 +23,7 @@ const MAX_MIN = Number(process.env.MAX_MINUTES ?? 25);
 /** Ask range to pick from. A high range (e.g. 0.80–0.95) makes a YES — and so a real Gemini payout — likely. */
 const MIN_ASK = Number(process.env.MIN_ASK ?? 0.2);
 const MAX_ASK = Number(process.env.MAX_ASK ?? 0.8);
+const REFUND_PCT = Number(process.env.REFUND_PCT ?? 100);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const t = () => new Date().toLocaleTimeString();
 
@@ -48,12 +49,12 @@ async function main() {
   const closesInMin = Math.round((Date.parse(m.closesAt!) - Date.now()) / 60_000);
   console.log(`[${t()}] market: ${m.title} · ask ${m.yesAsk} · closes in ${closesInMin} min (${m.symbol})`);
 
-  const costPct = Math.min(100, Math.ceil(Number(m.yesAsk) * 100 * 1.1 * 1.4));
+  const costPct = Math.min(100, Math.ceil(Number(m.yesAsk) * REFUND_PCT * 1.1 * 1.4));
   const { campaign } = await j<{ campaign: string }>(`${APP}/api/campaigns`, {
     method: 'POST',
-    body: JSON.stringify({ marketSymbol: m.symbol, refundPct: 100, maxCostPct: costPct, liabilityCapUsd: 50, maxUnhedgedUsd: 10, deadlineMinutes: Math.max(1, closesInMin - 1) }),
+    body: JSON.stringify({ marketSymbol: m.symbol, refundPct: REFUND_PCT, maxCostPct: costPct, liabilityCapUsd: 50, maxUnhedgedUsd: 10, deadlineMinutes: Math.max(1, closesInMin - 1) }),
   });
-  console.log(`[${t()}] promo ${campaign} · 100% back · max cost ${costPct}%`);
+  console.log(`[${t()}] promo ${campaign} · ${REFUND_PCT}% back · max cost ${costPct}%`);
 
   const burner = Keypair.generate();
   await j(`${APP}/api/faucet`, { method: 'POST', body: JSON.stringify({ wallet: burner.publicKey.toBase58() }) });

@@ -79,14 +79,17 @@ async function main() {
   mock.on('price', () => hedger.kickAll());
   mock.on('resolved', () => void settler.tick());
 
+  // INGEST_MODE=quicknode: the Streams webhook is the live feed; poll mode uses a websocket. The signature backfill
+  // runs in both modes as a safety net (same deduped handler).
   if (env.INGEST_MODE === 'poll') ingest.startWebsocket();
+  else log.info('live ingest via QuickNode Streams webhook (POST /webhooks/quicknode)');
   ingest.startBackfill(env.BACKFILL_INTERVAL_MS);
   settler.start();
   // Safety net: re-check hedges periodically (covers missed events and paused-by-hedger recovery).
   const sweep = setInterval(() => hedger.kickAll(), 20_000);
   hedger.kickAll();
 
-  const app = await buildServer({ env, chain, repo, registry, hedger, settler, ingest, venue, markets, mock, gemini });
+  const app = await buildServer({ env, chain, repo, registry, hedger, settler, ingest, venue, markets, mock, gemini, log: log.child({ mod: 'http' }) });
   await app.listen({ host: env.ENGINE_HOST, port: env.ENGINE_PORT });
   log.info(`engine listening on http://${env.ENGINE_HOST}:${env.ENGINE_PORT}`);
 

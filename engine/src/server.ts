@@ -6,6 +6,7 @@ import type { CampaignState, CampaignSummary, EngineInfo, MarketSummary, Quote, 
 import { claimAta, type CampaignView } from '@oth/shared/program';
 import { z } from 'zod';
 import type { Repo } from './db';
+import { decodeBody, extractTransactions, NonceCache, verifyQuickNode } from './quicknode';
 import type { Hedger } from './hedger';
 import type { Ingest } from './ingest';
 import { isPubkey, type Registry } from './registry';
@@ -27,6 +28,7 @@ export interface Deps {
   markets: MarketSource;
   mock: MockGemini | null;
   gemini: GeminiSandbox | null;
+  log: import('pino').Logger;
 }
 
 export function simulatedFlags(env: EngineEnv): SimulatedFlags {
@@ -279,7 +281,8 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   });
 
   // ---------------- SIMULATED venue admin (mock mode only) ----------------
-  if (d.mock) {
+  // Only when something is actually simulated: never expose a resolve button for a real (sandbox) setup.
+  if (d.mock && (simulated.gemini || simulated.resolution)) {
     const mock = d.mock;
     const guard = (req: FastifyRequest, reply: FastifyReply): boolean => {
       if (!env.MOCK_ADMIN_TOKEN) return true;
@@ -301,10 +304,58 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     });
   }
 
-  // QuickNode Streams webhook — Phase B (milestone 7). Refuse until it's implemented and configured.
-  app.post('/webhooks/quicknode', async (_req, reply) =>
-    reply.code(503).send({ error: env.INGEST_MODE === 'quicknode' ? 'QuickNode ingest not implemented yet' : 'INGEST_MODE is not quicknode' }),
-  );
+  // ---------------- QuickNode Streams webhook ----------------
+  // Verified per docs/research/quicknode/validating-webhooks.md, then fed into the same idempotent ingest pipeline.
+  const nonces = new NonceCache();
+  await app.register(async (scope) => {
+    // Keep the exact bytes: the HMAC covers the (decoded) body as sent.
+    // Accept any content type (a 415 here would be invisible to us and make Streams pause the stream).
+    scope.removeAllContentTypeParsers();
+    scope.addContentTypeParser('*', { parseAs: 'buffer', bodyLimit: 10 * 1024 * 1024 }, (_req, body, done) => done(null, body));
+    scope.addHook('onResponse', async (req, reply) => {
+      if (!req.url.startsWith('/webhooks/quicknode')) return;
+      d.log.info(
+        {
+          status: reply.statusCode,
+          contentType: req.headers['content-type'],
+          contentEncoding: req.headers['content-encoding'],
+          bytes: req.headers['content-length'],
+          hasSig: !!req.headers['x-qn-signature'],
+          ua: req.headers['user-agent'],
+          ms: Math.round(reply.elapsedTime),
+        },
+        'quicknode request',
+      );
+    });
+    scope.post('/webhooks/quicknode', async (req, reply) => {
+      const token = env.QUICKNODE_STREAM_SECURITY_TOKEN;
+      if (!token) return reply.code(503).send({ error: 'QUICKNODE_STREAM_SECURITY_TOKEN is not configured' });
+      let payload: string;
+      try {
+        payload = decodeBody(req.body as Buffer, req.headers['content-encoding'] as string | undefined);
+      } catch {
+        return reply.code(400).send({ error: 'could not decode body' });
+      }
+      const h = (n: string) => (req.headers[n] as string | undefined) ?? undefined;
+      const v = verifyQuickNode({ token, nonce: h('x-qn-nonce'), timestamp: h('x-qn-timestamp'), signature: h('x-qn-signature'), payload, nonces });
+      if (!v.ok) {
+        d.log.warn({ reason: v.reason }, 'quicknode webhook rejected');
+        return reply.code(401).send({ error: v.reason });
+      }
+      let body: unknown;
+      try {
+        body = payload ? JSON.parse(payload) : null;
+      } catch {
+        return reply.code(400).send({ error: 'invalid JSON' });
+      }
+      const txs = extractTransactions(body);
+      let fresh = 0;
+      for (const tx of txs) fresh += await d.ingest.ingestLogs({ ...tx, source: 'quicknode' });
+      d.log.info({ transactions: txs.length, fresh }, 'quicknode delivery');
+      // 2xx tells Streams the batch is delivered (it retries otherwise).
+      return { ok: true, transactions: txs.length, fresh };
+    });
+  });
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof z.ZodError) return reply.code(400).send({ error: err.issues.map((i) => i.message).join('; ') });

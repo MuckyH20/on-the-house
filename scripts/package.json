@@ -6,14 +6,15 @@
   "description": "Devnet setup, QuickNode Stream creation and the end-to-end demo.",
   "scripts": {
     "setup:devnet": "tsx src/setup-devnet.ts",
-    "create:stream": "tsx src/create-stream.ts",
+    "create:stream": "tsx src/create-stream.ts create",
     "demo:e2e": "tsx src/demo-e2e.ts",
     "check:env": "tsx src/check-env.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "echo \"(scripts have no unit tests; run pnpm demo:e2e)\"",
     "smoke:app": "tsx src/smoke-app.ts",
     "demo:sandbox": "tsx src/demo-sandbox.ts",
-    "gemini:probe": "tsx src/gemini-probe.ts"
+    "gemini:probe": "tsx src/gemini-probe.ts",
+    "stream": "tsx src/create-stream.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",

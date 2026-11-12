@@ -20,6 +20,9 @@ const APP = (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 const ENGINE = (process.env.PUBLIC_ENGINE_URL || 'http://localhost:8787').replace(/\/$/, '');
 const MIN_MIN = Number(process.env.MIN_MINUTES ?? 8);
 const MAX_MIN = Number(process.env.MAX_MINUTES ?? 25);
+/** Ask range to pick from. A high range (e.g. 0.80–0.95) makes a YES — and so a real Gemini payout — likely. */
+const MIN_ASK = Number(process.env.MIN_ASK ?? 0.2);
+const MAX_ASK = Number(process.env.MAX_ASK ?? 0.8);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const t = () => new Date().toLocaleTimeString();
 
@@ -40,8 +43,8 @@ async function main() {
   const { markets } = await j<{ markets: MarketSummary[] }>(`${ENGINE}/markets?limit=500`);
   const lo = Date.now() + MIN_MIN * 60_000;
   const hi = Date.now() + MAX_MIN * 60_000;
-  const m = markets.find((x) => x.closesAt && Date.parse(x.closesAt) >= lo && Date.parse(x.closesAt) <= hi && x.yesAsk && Number(x.yesAsk) >= 0.2 && Number(x.yesAsk) <= 0.8);
-  if (!m) throw new Error(`no sandbox market with a 0.20–0.80 ask closing in ${MIN_MIN}–${MAX_MIN} min; try again in a few minutes`);
+  const m = markets.find((x) => x.closesAt && Date.parse(x.closesAt) >= lo && Date.parse(x.closesAt) <= hi && x.yesAsk && Number(x.yesAsk) >= MIN_ASK && Number(x.yesAsk) <= MAX_ASK);
+  if (!m) throw new Error(`no sandbox market with a ${MIN_ASK}–${MAX_ASK} ask closing in ${MIN_MIN}–${MAX_MIN} min; try again in a few minutes`);
   const closesInMin = Math.round((Date.parse(m.closesAt!) - Date.now()) / 60_000);
   console.log(`[${t()}] market: ${m.title} · ask ${m.yesAsk} · closes in ${closesInMin} min (${m.symbol})`);
 

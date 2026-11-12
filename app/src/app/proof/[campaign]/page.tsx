@@ -42,6 +42,7 @@ export default function ProofPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Simulated show={s.simulated.gemini} label="SIMULATED HEDGES (mock Gemini order book)" />
+          {s.venue ? <span className="inline-flex items-center rounded border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-sky-800">GEMINI SANDBOX · TEST FUNDS</span> : null}
           <Simulated show={s.simulated.resolution} label="SIMULATED RESOLUTION" />
         </div>
       </div>
@@ -61,6 +62,17 @@ export default function ProofPage() {
           <div>Hedger: {s.hedger.state}{s.hedger.pendingContracts ? ` · ${s.hedger.pendingContracts} pending` : ''} · max price ${microsToPrice(BigInt(s.hedger.maxPriceMicros))}</div>
         </div>
         {s.hedger.lastError ? <div className="rounded bg-warn-soft p-2 text-xs text-warn">{s.hedger.lastError}</div> : null}
+        {s.venue ? (
+          <div className="rounded-lg border border-line bg-paper p-3 text-sm">
+            <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">Gemini’s own records (sandbox account)</div>
+            <div className="grid gap-1 sm:grid-cols-3">
+              <div>Position held: <b className="tabular">{s.venue.positionContracts ?? '0'} YES</b></div>
+              <div>Gemini resolution: <b>{s.venue.resolutionSide ? s.venue.resolutionSide.toUpperCase() : 'not yet'}</b></div>
+              <div>Gemini paid us: <b className="tabular">{s.venue.settledPayout != null ? `$${s.venue.settledPayout}` : '—'}</b></div>
+            </div>
+            {s.venue.error ? <div className="mt-1 text-xs text-warn">Couldn’t reach Gemini: {s.venue.error}</div> : null}
+          </div>
+        ) : null}
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">

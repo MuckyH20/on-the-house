@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+target
+programs
+.keys
+.env
+.env.*
+**/.env*
+engine/data
+docs
+app
+scripts
+*.log
+.git

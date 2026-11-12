@@ -79,6 +79,11 @@ async function main() {
     repo.close();
     process.exit(0);
   };
+  // A rate-limited or flaky RPC (public devnet returns 429s) can reject a promise deep inside web3.js. Every engine
+  // loop retries on its own (backfill, hedger sweep, settler), so log and keep serving instead of crashing.
+  process.on('unhandledRejection', (reason) => {
+    log.error({ err: reason instanceof Error ? { message: reason.message, stack: reason.stack } : String(reason) }, 'unhandled rejection (continuing)');
+  });
   process.on('SIGINT', () => void shutdown('SIGINT'));
   process.on('SIGTERM', () => void shutdown('SIGTERM'));
 }

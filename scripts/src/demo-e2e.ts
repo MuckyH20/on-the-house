@@ -67,10 +67,21 @@ async function main() {
   const treasury = new PublicKey(info.treasury);
   console.log(`cluster ${cluster} · engine ${ENGINE} · program ${info.programId} · SIMULATED Gemini`);
 
-  const usdcBalance = async (owner: PublicKey) =>
-    BigInt((await connection.getTokenAccountBalance(ata(owner, usdcMint), 'confirmed').catch(() => null))?.value.amount ?? '0');
-  const claimBalance = async (owner: PublicKey, claimMint: PublicKey) =>
-    BigInt((await connection.getTokenAccountBalance(claimAta(owner, claimMint), 'confirmed').catch(() => null))?.value.amount ?? '0');
+  /** Token balance; 0 only when the account doesn't exist. Rate-limit/transport errors are retried, never read as 0. */
+  async function tokenBalance(account: PublicKey): Promise<bigint> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return BigInt((await connection.getTokenAccountBalance(account, 'confirmed')).value.amount);
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (/could not find account|Invalid param/i.test(msg)) return 0n;
+        if (attempt >= 8) throw e;
+        await sleep(1_000 * attempt);
+      }
+    }
+  }
+  const usdcBalance = (owner: PublicKey) => tokenBalance(ata(owner, usdcMint));
+  const claimBalance = (owner: PublicKey, claimMint: PublicKey) => tokenBalance(claimAta(owner, claimMint));
 
   /** Fresh burner wallets with $10 dUSDC each (operator pays every fee; burners hold zero SOL). */
   async function burners(n: number): Promise<Keypair[]> {

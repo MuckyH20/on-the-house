@@ -19,6 +19,11 @@ export interface GeminiContract {
   /** Absent on active contracts (see fixtures); 'yes' | 'no' once settled. */
   resolutionSide?: 'yes' | 'no' | null;
   resolvedAt?: string | null;
+  marketState?: string;
+  priceIncrement?: string;
+  priceMinimum?: string;
+  quantityIncrement?: string;
+  quantityMinimum?: string;
   prices?: {
     buy?: { yes?: string; no?: string };
     sell?: { yes?: string; no?: string };
@@ -106,17 +111,27 @@ export class GeminiPublic implements MarketSource {
     return out;
   }
 
-  async getMarket(symbol: string): Promise<MarketSummary | null> {
+  /** The event + raw contract for an instrument symbol (prices, increments, market state). */
+  async getContractWithEvent(symbol: string): Promise<{ event: GeminiEvent; contract: GeminiContract } | null> {
     if (!symbol.startsWith('GEMI-')) return null;
     for (const t of this.candidateTickers(symbol)) {
       const ev = await this.getEvent(t);
       const c = ev?.contracts.find((x) => x.instrumentSymbol === symbol);
       if (ev && c) {
         this.eventOf.set(symbol, ev.ticker);
-        return toSummary(ev, c);
+        return { event: ev, contract: c };
       }
     }
     return null;
+  }
+
+  async getContract(symbol: string): Promise<GeminiContract | null> {
+    return (await this.getContractWithEvent(symbol))?.contract ?? null;
+  }
+
+  async getMarket(symbol: string): Promise<MarketSummary | null> {
+    const hit = await this.getContractWithEvent(symbol);
+    return hit ? toSummary(hit.event, hit.contract) : null;
   }
 
   async resolution(symbol: string): Promise<Resolution> {

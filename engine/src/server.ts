@@ -2,7 +2,7 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 import cors from '@fastify/cors';
 import { PublicKey } from '@solana/web3.js';
 import { coverageBps, microsToPrice, quoteSale, unhedgedLiability, type EngineEnv } from '@oth/shared';
-import type { CampaignState, CampaignSummary, EngineInfo, MarketSummary, Quote, SimulatedFlags, WalletClaim } from '@oth/shared/api';
+import type { CampaignState, CampaignSummary, EngineInfo, MarketSummary, Quote, SimulatedFlags, VenueProof, WalletClaim } from '@oth/shared/api';
 import { claimAta, type CampaignView } from '@oth/shared/program';
 import { z } from 'zod';
 import type { Repo } from './db';
@@ -11,6 +11,7 @@ import type { Ingest } from './ingest';
 import { isPubkey, type Registry } from './registry';
 import type { Settler } from './settler';
 import type { Chain } from './solana';
+import type { GeminiSandbox } from './venue/gemini-sandbox';
 import type { MockGemini } from './venue/mock';
 import type { MarketSource, Venue } from './venue/types';
 
@@ -25,6 +26,7 @@ export interface Deps {
   venue: Venue;
   markets: MarketSource;
   mock: MockGemini | null;
+  gemini: GeminiSandbox | null;
 }
 
 export function simulatedFlags(env: EngineEnv): SimulatedFlags {
@@ -44,6 +46,36 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     return markets.getMarket(symbol).catch(() => null);
   }
 
+  // Gemini's own record of our hedges (sandbox mode). Cached briefly: dashboards rebuild state often.
+  let venueCache: { at: number; positions: Map<string, string>; settled: Map<string, { payout: number; side: 'yes' | 'no'; at: string }>; error: string | null } | null = null;
+  async function venueProof(symbol: string): Promise<VenueProof | undefined> {
+    if (!d.gemini) return undefined;
+    if (!venueCache || Date.now() - venueCache.at > 5_000) {
+      const next = { at: Date.now(), positions: new Map<string, string>(), settled: new Map<string, { payout: number; side: 'yes' | 'no'; at: string }>(), error: null as string | null };
+      try {
+        for (const p of await d.gemini.positions()) if (p.outcome === 'yes') next.positions.set(p.symbol, p.totalQuantity);
+        for (const p of (await d.gemini.settledPositions()).positions) {
+          const prev = next.settled.get(p.instrumentSymbol);
+          next.settled.set(p.instrumentSymbol, { payout: (prev?.payout ?? 0) + Number(p.payout), side: p.resolutionSide, at: p.settledAt });
+        }
+      } catch (e) {
+        next.error = (e as Error).message;
+        if (venueCache) Object.assign(next, { positions: venueCache.positions, settled: venueCache.settled });
+      }
+      venueCache = next;
+    }
+    const st = venueCache.settled.get(symbol);
+    return {
+      source: 'gemini-sandbox',
+      positionContracts: venueCache.positions.get(symbol) ?? null,
+      settledPayout: st ? st.payout.toFixed(2) : null,
+      resolutionSide: st?.side ?? null,
+      settledAt: st?.at ?? null,
+      checkedAt: venueCache.at,
+      error: venueCache.error,
+    };
+  }
+
   async function campaignState(c: CampaignView): Promise<CampaignState> {
     const liability = BigInt(c.liability);
     const hedged = BigInt(c.hedgedContracts);
@@ -58,6 +90,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       events: repo.eventsForCampaign(c.address, 100),
       hedger: hedger.statusFor(c),
       settlement: settler.statusFor(c),
+      venue: await venueProof(c.marketSymbol),
       simulated,
       updatedAt: Date.now(),
     };

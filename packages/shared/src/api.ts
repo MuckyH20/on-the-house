@@ -129,6 +129,19 @@ export interface SettlementStatus {
   lastError: string | null;
 }
 
+/** What the trading venue itself reports for a campaign's market (Gemini sandbox mode only). */
+export interface VenueProof {
+  source: 'gemini-sandbox';
+  /** YES contracts held at Gemini for this symbol (all campaigns on the symbol share the position). */
+  positionContracts: string | null;
+  /** Gemini's settled-position payout for this symbol, in dollars ("5.00"), once the market settles. */
+  settledPayout: string | null;
+  resolutionSide: 'yes' | 'no' | null;
+  settledAt: string | null;
+  checkedAt: number;
+  error: string | null;
+}
+
 export interface CampaignState {
   campaign: CampaignView;
   market: MarketSummary | null;
@@ -143,6 +156,8 @@ export interface CampaignState {
   events: StoredEvent[];
   hedger: HedgerStatus;
   settlement: SettlementStatus;
+  /** Present in GEMINI_MODE=sandbox. */
+  venue?: VenueProof;
   simulated: SimulatedFlags;
   updatedAt: number;
 }

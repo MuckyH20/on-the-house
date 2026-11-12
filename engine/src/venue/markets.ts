@@ -4,32 +4,39 @@ import type { MockGemini } from './mock';
 import type { MarketSource, Resolution } from './types';
 
 /**
- * What the app sees as "markets": SIMULATED mock markets plus live Gemini markets (public data).
- * Resolution follows RESOLUTION_SOURCE: `mock` → the mock admin endpoint decides (even for real Gemini symbols,
- * and the summary then shows the SIMULATED outcome); `production` → Gemini's public `resolutionSide`.
+ * What the app sees as "markets", and where resolution comes from.
+ *  - `list`: Gemini public data for browsing/prices. GEMINI_MODE=mock → production host; GEMINI_MODE=sandbox → the
+ *    sandbox host (only ~20% of production symbols exist there, and hedges must be placed on tradable symbols).
+ *  - `mock`: SIMULATED markets (listed only in mock mode) and the mock admin resolver.
+ *  - RESOLUTION_SOURCE: `mock` → the mock admin endpoint decides (summary shows the SIMULATED outcome);
+ *    `production` / `sandbox` → that Gemini host's public `resolutionSide`.
  */
 export class CombinedMarkets implements MarketSource {
   constructor(
-    private readonly mock: MockGemini,
-    private readonly gemini: GeminiPublic | null,
-    private readonly resolutionSource: 'mock' | 'production',
+    private readonly o: {
+      list: GeminiPublic | null;
+      mock: MockGemini;
+      listMockMarkets: boolean;
+      resolutionSource: 'mock' | 'production' | 'sandbox';
+      resolvers: { production?: GeminiPublic; sandbox?: GeminiPublic };
+    },
   ) {}
 
   get simulated(): boolean {
-    return this.resolutionSource === 'mock';
+    return this.o.resolutionSource === 'mock';
   }
 
   async listMarkets(): Promise<MarketSummary[]> {
-    const sim = await this.mock.listMarkets();
-    const live = this.gemini ? await this.gemini.listMarkets().catch(() => []) : [];
+    const live = this.o.list ? await this.o.list.listMarkets().catch(() => []) : [];
+    const sim = this.o.listMockMarkets ? await this.o.mock.listMarkets() : [];
     return [...live, ...sim];
   }
 
   async getMarket(symbol: string): Promise<MarketSummary | null> {
-    const mocked = await this.mock.getMarket(symbol);
-    const live = this.gemini && symbol.startsWith('GEMI-') ? await this.gemini.getMarket(symbol).catch(() => null) : null;
+    const mocked = await this.o.mock.getMarket(symbol);
+    const live = this.o.list && symbol.startsWith('GEMI-') ? await this.o.list.getMarket(symbol).catch(() => null) : null;
     if (!live) return mocked;
-    if (this.resolutionSource === 'mock') {
+    if (this.o.resolutionSource === 'mock') {
       // Real market metadata; SIMULATED resolution state.
       return { ...live, status: mocked?.outcome ? 'resolved' : live.status === 'resolved' ? 'closed' : live.status, outcome: mocked?.outcome ?? null, simulated: true };
     }
@@ -37,7 +44,9 @@ export class CombinedMarkets implements MarketSource {
   }
 
   async resolution(symbol: string): Promise<Resolution> {
-    if (this.resolutionSource === 'production' && this.gemini && symbol.startsWith('GEMI-')) return this.gemini.resolution(symbol);
-    return this.mock.resolution(symbol);
+    const src = this.o.resolutionSource;
+    const resolver = src === 'production' ? this.o.resolvers.production : src === 'sandbox' ? this.o.resolvers.sandbox : undefined;
+    if (resolver && symbol.startsWith('GEMI-')) return resolver.resolution(symbol);
+    return this.o.mock.resolution(symbol);
   }
 }

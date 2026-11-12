@@ -11,6 +11,7 @@ import { Settler } from './settler';
 import { connectChain } from './solana';
 import { GeminiPublic } from './venue/gemini-public';
 import { CombinedMarkets } from './venue/markets';
+import { GeminiSandbox } from './venue/gemini-sandbox';
 import { MockGemini } from './venue/mock';
 import type { MarketSource, Venue } from './venue/types';
 
@@ -24,19 +25,39 @@ async function main() {
   const chain = await connectChain(env);
   log.info({ cluster: chain.cluster, programId: chain.programId.toBase58(), operator: chain.operator.publicKey.toBase58() }, 'connected');
 
-  if (env.GEMINI_MODE !== 'mock' || env.RESOLUTION_SOURCE === 'sandbox') {
-    // Phase B (milestone 6) adds the signed Gemini sandbox trading client.
-    throw new Error('GEMINI_MODE=sandbox / RESOLUTION_SOURCE=sandbox are not implemented yet (Phase B). Use GEMINI_MODE=mock.');
-  }
-  // Public market data is read from production Gemini (read-only, allowed); trading stays on the mock book.
-  const gemini = new GeminiPublic(env.GEMINI_PUBLIC_BASE_URL);
+  // Public market data: production host (read-only, allowed) and the sandbox host (where sandbox hedges trade).
+  const prodPublic = new GeminiPublic(env.GEMINI_PUBLIC_BASE_URL);
+  const sandboxPublic = new GeminiPublic(env.GEMINI_SANDBOX_BASE_URL);
+  const listSource = env.GEMINI_MODE === 'sandbox' ? sandboxPublic : prodPublic;
   const mock = new MockGemini(priceToMicros(String(env.MOCK_DEFAULT_ASK)), async (symbol) => {
-    const m = symbol.startsWith('GEMI-') ? await gemini.getMarket(symbol) : null;
+    const m = symbol.startsWith('GEMI-') ? await listSource.getMarket(symbol) : null;
     return m?.yesAsk ? priceToMicros(m.yesAsk) : null;
   });
-  const venue: Venue = mock;
-  const markets: MarketSource = new CombinedMarkets(mock, gemini, env.RESOLUTION_SOURCE);
-  log.warn({ resolution: env.RESOLUTION_SOURCE }, 'hedges go to the SIMULATED Gemini order book (GEMINI_MODE=mock)');
+
+  let venue: Venue = mock;
+  let gemini: GeminiSandbox | null = null;
+  if (env.GEMINI_MODE === 'sandbox') {
+    gemini = new GeminiSandbox({
+      baseUrl: env.GEMINI_SANDBOX_BASE_URL,
+      apiKey: env.GEMINI_API_KEY!,
+      apiSecret: env.GEMINI_API_SECRET!,
+      account: env.GEMINI_ACCOUNT,
+      market: sandboxPublic,
+    });
+    const terms = await gemini.assertReady();
+    venue = gemini;
+    log.info({ termsVersion: terms.acceptedVersion }, 'hedges go to the Gemini SANDBOX (test funds)');
+  } else {
+    log.warn('hedges go to the SIMULATED Gemini order book (GEMINI_MODE=mock)');
+  }
+  const markets: MarketSource = new CombinedMarkets({
+    list: listSource,
+    mock,
+    listMockMarkets: env.GEMINI_MODE === 'mock',
+    resolutionSource: env.RESOLUTION_SOURCE,
+    resolvers: { production: prodPublic, sandbox: sandboxPublic },
+  });
+  log.info({ gemini: env.GEMINI_MODE, resolution: env.RESOLUTION_SOURCE, marketList: new URL(listSource === sandboxPublic ? env.GEMINI_SANDBOX_BASE_URL : env.GEMINI_PUBLIC_BASE_URL).host }, 'venue configured');
 
   const repo = new Repo(resolveFromRoot(env.DATABASE_PATH));
   const registry = new Registry(chain);
@@ -65,7 +86,7 @@ async function main() {
   const sweep = setInterval(() => hedger.kickAll(), 20_000);
   hedger.kickAll();
 
-  const app = await buildServer({ env, chain, repo, registry, hedger, settler, ingest, venue, markets, mock });
+  const app = await buildServer({ env, chain, repo, registry, hedger, settler, ingest, venue, markets, mock, gemini });
   await app.listen({ host: env.ENGINE_HOST, port: env.ENGINE_PORT });
   log.info(`engine listening on http://${env.ENGINE_HOST}:${env.ENGINE_PORT}`);
 

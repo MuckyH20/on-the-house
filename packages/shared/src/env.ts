@@ -82,6 +82,8 @@ export const engineEnvSchema = z
     GEMINI_SANDBOX_BASE_URL: withDefault(geminiSandboxUrl, 'https://api.sandbox.gemini.com'),
     GEMINI_API_KEY: optional(z.string().min(1)),
     GEMINI_API_SECRET: optional(z.string().min(1)),
+    /** Subaccount shortname for `master-` API keys (defaults to "primary"). */
+    GEMINI_ACCOUNT: optional(z.string().min(1)),
 
     /** QuickNode Streams webhook security token (INGEST_MODE=quicknode). */
     QUICKNODE_STREAM_SECURITY_TOKEN: optional(z.string().min(1)),

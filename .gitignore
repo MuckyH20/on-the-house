@@ -46,3 +46,7 @@ pnpm-debug.log*
 .idea/
 coverage/
 .vercel/
+
+# ---- local working notes (not published) ----
+docs/SPEC.md
+docs/PROGRESS.md

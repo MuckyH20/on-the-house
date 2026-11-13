@@ -3,7 +3,7 @@
  * order id up in the Gemini sandbox account's order history and compare quantity/price, then show Gemini's
  * position and settled payout for the market.
  *
- * Usage: pnpm verify:orders <campaignAddress>          (engine must be running; uses .env credentials)
+ * Usage: pnpm verify:orders <campaign address | Gemini order id>   (engine must be running; uses .env credentials)
  */
 import type { CampaignState } from '@oth/shared/api';
 import { loadEngineEnv } from '../env';
@@ -11,11 +11,32 @@ import { GeminiPublic } from '../venue/gemini-public';
 import { GeminiSandbox } from '../venue/gemini-sandbox';
 
 async function main() {
-  const campaign = process.argv[2];
-  if (!campaign) throw new Error('usage: pnpm verify:orders <campaignAddress>');
+  const arg = process.argv[2]?.trim();
+  if (!arg) throw new Error('usage: pnpm verify:orders <campaign address | Gemini order id>');
   const env = loadEngineEnv();
   const engineUrl = `http://127.0.0.1:${env.ENGINE_PORT}`;
-  const s = (await (await fetch(`${engineUrl}/campaigns/${campaign}/state`)).json()) as CampaignState;
+  const getState = async (address: string) => {
+    const res = await fetch(`${engineUrl}/campaigns/${address}/state`);
+    return res.ok ? ((await res.json()) as CampaignState) : null;
+  };
+  let campaign = arg;
+  if (/^\d{6,}$/.test(arg)) {
+    // An order id: find the campaign whose fills include it.
+    const list = (await (await fetch(`${engineUrl}/campaigns`)).json()) as { campaigns: { campaign: { address: string } }[] };
+    let found: string | null = null;
+    for (const c of list.campaigns) {
+      const st = await getState(c.campaign.address);
+      if (st?.fills.some((f) => f.orderId === arg)) {
+        found = c.campaign.address;
+        break;
+      }
+    }
+    if (!found) throw new Error(`no campaign has a hedge fill with Gemini order id ${arg}`);
+    console.log(`order ${arg} belongs to campaign ${found}`);
+    campaign = found;
+  }
+  const s = await getState(campaign);
+  if (!s) throw new Error(`campaign ${campaign} not found (pass the address from the proof-page URL, or a Gemini order id)`);
   const symbol = s.campaign.marketSymbol;
   const g = new GeminiSandbox({
     baseUrl: env.GEMINI_SANDBOX_BASE_URL,

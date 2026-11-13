@@ -50,13 +50,25 @@ export async function launchPromo(owner: Owner, p: LaunchParams): Promise<{ camp
   let bin = '';
   for (const b of signed) bin += String.fromCharCode(b);
   await getJson('/api/submit', { method: 'POST', body: JSON.stringify({ transaction: btoa(bin) }) });
+  // Let the engine pick the new promo up right away (it would also see it on-chain within seconds).
+  await engine(`/campaigns/${built.campaign}/state`).catch(() => null);
   return { campaign: built.campaign };
 }
 
-/** Markets that can be protected right now (someone is selling at a fair price, and it isn't about to close). */
+export const isPracticeGame = (m: Pick<MarketSummary, 'symbol'> | null | undefined) => !!m?.symbol.startsWith('SIM-PRACTICE-');
+
+/** Real markets that can be protected right now (someone is selling at a fair price, and it isn't about to close). */
 export function tradable(markets: MarketSummary[], minMinutesLeft = 20): MarketSummary[] {
   const soonest = Date.now() + minMinutesLeft * 60_000;
-  return markets.filter((m) => m.yesAsk && Number(m.yesAsk) >= 0.1 && Number(m.yesAsk) <= 0.7 && (!m.closesAt || Date.parse(m.closesAt) >= soonest));
+  return markets.filter(
+    (m) => !isPracticeGame(m) && m.yesAsk && Number(m.yesAsk) >= 0.1 && Number(m.yesAsk) <= 0.7 && (!m.closesAt || Date.parse(m.closesAt) >= soonest),
+  );
+}
+
+/** SIMULATED practice games — offered only when no real game can be protected. */
+export function practiceGames(markets: MarketSummary[], minMinutesLeft = 20): MarketSummary[] {
+  const soonest = Date.now() + minMinutesLeft * 60_000;
+  return markets.filter((m) => isPracticeGame(m) && m.yesAsk && (!m.closesAt || Date.parse(m.closesAt) >= soonest));
 }
 
 /** Smart default: the next game that's cheap enough to make “free” affordable, Bitcoin first. */

@@ -130,7 +130,7 @@ export class Hedger {
           priceMicros: res.avgPriceMicros.toString(),
           recordTx: null,
           status: 'filled',
-          simulated: this.venue.simulated,
+          simulated: this.venue.simulatedFor?.(c.marketSymbol) ?? this.venue.simulated,
           error: null,
           createdAt: now,
           updatedAt: now,

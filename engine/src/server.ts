@@ -42,6 +42,9 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   const origins = env.CORS_ORIGINS.trim() === '*' ? true : env.CORS_ORIGINS.split(',').map((s) => s.trim());
   await app.register(cors, { origin: origins, methods: ['GET', 'HEAD', 'POST', 'PUT'] });
   const simulated = simulatedFlags(env);
+  /** Practice games (SIM-…) are simulated even when the engine trades on the real sandbox. */
+  const flagsFor = (symbol: string): SimulatedFlags =>
+    symbol.startsWith('SIM-') ? { gemini: true, resolution: true } : simulated;
 
   const notFound = (reply: FastifyReply, what: string) => reply.code(404).send({ error: `${what} not found` });
 
@@ -97,8 +100,8 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       events: repo.eventsForCampaign(c.address, 100),
       hedger: hedger.statusFor(c),
       settlement: settler.statusFor(c),
-      venue: await venueProof(c.marketSymbol),
-      simulated,
+      venue: c.marketSymbol.startsWith('SIM-') ? undefined : await venueProof(c.marketSymbol),
+      simulated: flagsFor(c.marketSymbol),
       updatedAt: Date.now(),
     };
   }
@@ -234,7 +237,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       paused: c.status !== 'open' || hedger.pausedByHedger(c.address),
       available: reason === null,
       reason,
-      simulated,
+      simulated: flagsFor(c.marketSymbol),
       quotedAt: Date.now(),
     };
     if (q.askMicros !== null) {
@@ -302,9 +305,15 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
 
   // ---------------- SIMULATED venue admin (mock mode only) ----------------
   // Only when something is actually simulated: never expose a resolve button for a real (sandbox) setup.
-  if (d.mock && (simulated.gemini || simulated.resolution)) {
+  if (d.mock) {
     const mock = d.mock;
-    const guard = (req: FastifyRequest, reply: FastifyReply): boolean => {
+    const anySimulated = simulated.gemini || simulated.resolution;
+    const guard = (req: FastifyRequest<{ Params: { symbol: string } }>, reply: FastifyReply): boolean => {
+      // With real trading on, only practice games can be driven by hand — never a real market.
+      if (!anySimulated && !req.params.symbol.startsWith('SIM-PRACTICE-')) {
+        void reply.code(404).send({ error: 'not found' });
+        return false;
+      }
       if (!env.MOCK_ADMIN_TOKEN) return true;
       if (req.headers.authorization === `Bearer ${env.MOCK_ADMIN_TOKEN}`) return true;
       void reply.code(401).send({ error: 'mock admin token required' });

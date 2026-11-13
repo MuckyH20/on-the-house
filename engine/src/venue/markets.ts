@@ -17,6 +17,8 @@ export class CombinedMarkets implements MarketSource {
       list: GeminiPublic | null;
       mock: MockGemini;
       listMockMarkets: boolean;
+      /** Offer rolling practice games (SIMULATED) alongside the real list. */
+      listPractice: boolean;
       resolutionSource: 'mock' | 'production' | 'sandbox';
       resolvers: { production?: GeminiPublic; sandbox?: GeminiPublic };
     },
@@ -29,7 +31,8 @@ export class CombinedMarkets implements MarketSource {
   async listMarkets(): Promise<MarketSummary[]> {
     const live = this.o.list ? await this.o.list.listMarkets().catch(() => []) : [];
     const sim = this.o.listMockMarkets ? await this.o.mock.listMarkets() : [];
-    return [...live, ...sim];
+    const practice = this.o.listPractice ? this.o.mock.practiceGames() : [];
+    return [...live, ...sim, ...practice];
   }
 
   async getMarket(symbol: string): Promise<MarketSummary | null> {

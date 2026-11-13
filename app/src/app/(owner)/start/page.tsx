@@ -13,6 +13,8 @@ import {
   cents,
   costBps,
   DEFAULT_ITEMS,
+  isPracticeGame,
+  practiceGames,
   defaultMaxCostPct,
   launchPromo,
   loadShop,
@@ -147,8 +149,11 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
     return () => clearInterval(t);
   }, []);
 
-  const options = useMemo(() => (markets ? tradable(markets).slice(0, 12) : []), [markets]);
-  const suggested = useMemo(() => (markets ? pickNextGame(markets) : null), [markets]);
+  const real = useMemo(() => (markets ? tradable(markets).slice(0, 12) : []), [markets]);
+  const practice = useMemo(() => (markets ? practiceGames(markets) : []), [markets]);
+  // Real Gemini games first; practice games only when none can be protected right now.
+  const options = real.length ? real : practice;
+  const suggested = useMemo(() => (markets ? (pickNextGame(markets) ?? practiceGames(markets)[0] ?? null) : null), [markets]);
   const market = options.find((m) => m.symbol === symbol) ?? suggested;
   const game = gameFor(market);
   const pct = refundPct ?? (market?.yesAsk ? suggestedRefundPct(market.yesAsk) : 100);
@@ -203,8 +208,17 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
         <button onClick={onEditShop} className="text-sm text-muted underline">{shopName || 'Edit shop'}</button>
       </div>
 
+      {isPracticeGame(market) ? (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">
+          <div className="font-semibold text-amber-900">No live Gemini games right now — this is a practice game</div>
+          <div className="mt-0.5 text-amber-900/80">
+            Everything works the same: real sales and refunds on Solana. Only the protection and the result are SIMULATED.
+            Real games show up here automatically when Gemini has prices.
+          </div>
+        </div>
+      ) : null}
       <div className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted">
-        {symbol ? 'Your game' : 'Next game'} · final {startsIn(market.closesAt)}
+        {isPracticeGame(market) ? 'Practice game' : symbol ? 'Your game' : 'Next game'} · final {startsIn(market.closesAt)}
       </div>
       <div className="mt-2">
         <GameCard game={game} offer={offerText(pct)} />
@@ -287,7 +301,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
       <button onClick={() => void launch()} disabled={busy || tooExpensive || cost === null} className="mt-5 w-full rounded-xl bg-brand py-3.5 font-semibold text-white disabled:opacity-40">
         {busy ? 'Launching…' : 'Launch promo'}
       </button>
-      {market.simulated ? <p className="mt-2 text-center text-xs text-muted">SIMULATED market (demo)</p> : null}
+      {market.simulated || isPracticeGame(market) ? <p className="mt-2 text-center text-xs text-muted">SIMULATED · practice game</p> : null}
     </Shell>
   );
 }

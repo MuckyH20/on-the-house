@@ -88,7 +88,9 @@ on devnet) handles the money:
 - **A few seconds of exposure.** Between a sale and its hedge, the shop isn't covered yet. The on-chain cap limits how
   much.
 - **Thin markets.** If contracts can't be bought at a fair price, sales pause instead of going uncovered. Gemini also
-  stops trading about 10 minutes before a market closes, so promos stop selling 12 minutes before.
+  stops trading about 10 minutes before a market closes, so promos stop selling 12 minutes before. Gemini's sandbox
+  often has no sellers at all, so when no real game can be protected the app offers a clearly labeled **practice game**
+  (simulated protection and result; the sales and refunds on Solana are still real).
 - **It's all test money** right now — Solana devnet and the Gemini sandbox.
 
 ## What Gemini could add

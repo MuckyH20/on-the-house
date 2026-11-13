@@ -27,11 +27,12 @@ export async function launch(b: LaunchInput): Promise<{ campaign: string; deadli
   if (b.maxUnhedgedUsd > b.liabilityCapUsd) throw new HttpError(400, 'Max uncovered refunds cannot exceed the total refund cap.');
   // Sales must stop before the venue stops trading the market (else sales can't be protected).
   const [market, info] = await Promise.all([
-    engineFetch<{ closesAt: string | null }>(`/markets/${encodeURIComponent(b.marketSymbol)}`).catch(() => null),
+    engineFetch<{ closesAt: string | null; status?: string }>(`/markets/${encodeURIComponent(b.marketSymbol)}`).catch(() => null),
     engineFetch<{ salesCutoffMinutes?: number }>('/health').catch(() => null),
   ]);
+  if (!market || market.status === 'resolved') throw new HttpError(409, 'That game isn’t available any more — pick another one.');
   let deadlineMinutes = b.deadlineMinutes;
-  if (market?.closesAt) {
+  if (market.closesAt) {
     const cutoff = info?.salesCutoffMinutes ?? 12;
     const minutesLeft = Math.floor((Date.parse(market.closesAt) - Date.now()) / 60_000) - cutoff;
     if (minutesLeft < 1) throw new HttpError(409, `This game is about to end — pick one that finishes later.`);

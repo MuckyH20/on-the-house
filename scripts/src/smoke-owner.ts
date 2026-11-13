@@ -66,6 +66,7 @@ async function main() {
   assert.equal(unsigned.status, 400, 'submit refuses a transaction missing the owner signature');
 
   // 3. it's the owner's promo
+  await fetch(`${ENGINE}/campaigns/${built.campaign}/state`); // as the app does after launching
   const mine = await j<{ campaigns: CampaignSummary[] }>(`${ENGINE}/campaigns?merchant=${address}`);
   assert.equal(mine.campaigns.length, 1);
   assert.equal(mine.campaigns[0]!.campaign.address, built.campaign);

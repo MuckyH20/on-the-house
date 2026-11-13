@@ -118,6 +118,9 @@ export default function PromoPage() {
       ) : game ? (
         <GameCard game={game} offer={customerOffer(refundPct)} audience="customer" />
       ) : null}
+      {state.data?.simulated.gemini && !ended ? (
+        <div className="text-center text-xs text-muted">Practice game · SIMULATED result — your order and refund are real demo transactions</div>
+      ) : null}
       {!ended && quote.data && !available ? <div className="rounded-xl bg-warn-soft p-3 text-sm text-warn">{quote.data.reason}</div> : null}
 
       {/* menu */}

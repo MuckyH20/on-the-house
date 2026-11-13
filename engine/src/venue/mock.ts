@@ -5,6 +5,12 @@ import type { MarketSummary } from '@oth/shared/api';
 import type { MarketQuote, MarketSource, OrderResult, Resolution, Venue } from './types';
 
 const TICK = 10_000n; // $0.01
+export const PRACTICE_PREFIX = 'SIM-PRACTICE-';
+export const isPractice = (symbol: string) => symbol.startsWith(PRACTICE_PREFIX);
+const PRACTICE_TEAMS: [string, string, bigint][] = [
+  ['BTC', 'Bitcoin', 350_000n],
+  ['ETH', 'Ethereum', 450_000n],
+];
 const SPREAD = 20_000n; // bid = ask − $0.02
 
 interface MockMarket {
@@ -71,7 +77,7 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
 
   async quote(symbol: string): Promise<MarketQuote> {
     const m = await this.ensure(symbol);
-    if (m.outcome) return { symbol, askMicros: null, bidMicros: null, tickMicros: TICK };
+    if (m.outcome || (m.closesAt && Date.parse(m.closesAt) <= Date.now())) return { symbol, askMicros: null, bidMicros: null, tickMicros: TICK };
     return { symbol, askMicros: m.askMicros, bidMicros: m.askMicros > SPREAD ? m.askMicros - SPREAD : null, tickMicros: TICK };
   }
 
@@ -116,7 +122,41 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
 
   async resolution(symbol: string): Promise<Resolution> {
     const m = this.markets.get(symbol);
+    // Practice games settle themselves a minute after the final, weighted by their price (unless an admin already did).
+    if (m && !m.outcome && isPractice(m.symbol) && m.closesAt && Date.now() >= Date.parse(m.closesAt) + 60_000) {
+      this.resolve(m.symbol, Math.random() * 1_000_000 < Number(m.askMicros) ? 'yes' : 'no');
+    }
     return m?.outcome ? { resolved: true, outcome: m.outcome } : { resolved: false };
+  }
+
+  // ---- practice games (SIMULATED fallback when the real venue has no sellers) ----
+
+  /** Keep two rolling practice games open, each closing at the next half hour that is ≥ 40 minutes away. */
+  practiceGames(now = Date.now()): MarketSummary[] {
+    const close = new Date(now + 40 * 60_000);
+    close.setSeconds(0, 0);
+    close.setMinutes(close.getMinutes() < 30 ? 30 : 60);
+    const stamp = close.toISOString().slice(0, 16).replace(/[-:T]/g, '');
+    for (const [team, name, ask] of PRACTICE_TEAMS) {
+      // If this slot's game was already ended by hand (e.g. "Bitcoin wins" in a demo), open a fresh one.
+      let symbol = `${PRACTICE_PREFIX}${team}-${stamp}`;
+      for (let n = 2; this.markets.get(symbol)?.outcome; n++) symbol = `${PRACTICE_PREFIX}${team}-${stamp}-${n}`;
+      if (!this.markets.has(symbol)) {
+        this.markets.set(symbol, {
+          symbol,
+          title: `${team} price today — Up`,
+          condition: `${name} finishes up (practice game)`,
+          category: 'practice',
+          askMicros: ask,
+          closesAt: close.toISOString(),
+          outcome: null,
+          adHoc: true, // not in the general mock list; offered only as practice
+        });
+      }
+    }
+    return [...this.markets.values()]
+      .filter((m) => isPractice(m.symbol) && !m.outcome && m.closesAt && Date.parse(m.closesAt) > now)
+      .map(toSummary);
   }
 
   // ---- admin (SIMULATED) ----

@@ -65,7 +65,12 @@ async function main() {
   const tx = Transaction.from(Buffer.from(pay.transaction, 'base64'));
   tx.partialSign(burner);
   const sig = await connection.sendRawTransaction(tx.serialize());
-  await connection.confirmTransaction(sig, 'confirmed');
+  // Wait until confirmed or the blockhash expires (a fixed 30 s timeout is too short on a busy devnet).
+  const res = await connection.confirmTransaction(
+    { signature: sig, blockhash: tx.recentBlockhash!, lastValidBlockHeight: (await connection.getBlockHeight('confirmed')) + 150 },
+    'confirmed',
+  );
+  if (res.value.err) throw new Error(`purchase failed: ${JSON.stringify(res.value.err)}`);
   console.log(`[${t()}] customer paid $3.00 (premium ${formatUsd(pay.premium)}) → refund if YES ${formatUsd(pay.refund)}  tx ${sig.slice(0, 16)}…`);
   await fetch(`${ENGINE}/campaigns/${campaign}/kick`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
 

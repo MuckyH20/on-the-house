@@ -13,6 +13,7 @@ import { GeminiPublic } from './venue/gemini-public';
 import { CombinedMarkets } from './venue/markets';
 import { GeminiSandbox } from './venue/gemini-sandbox';
 import { MockGemini } from './venue/mock';
+import { VenueRouter } from './venue/router';
 import type { MarketSource, Venue } from './venue/types';
 
 async function main() {
@@ -45,7 +46,7 @@ async function main() {
       market: sandboxPublic,
     });
     const terms = await gemini.assertReady();
-    venue = gemini;
+    venue = new VenueRouter(gemini, mock); // practice games (SIM-…) stay on the simulated book
     log.info({ termsVersion: terms.acceptedVersion }, 'hedges go to the Gemini SANDBOX (test funds)');
   } else {
     log.warn('hedges go to the SIMULATED Gemini order book (GEMINI_MODE=mock)');
@@ -54,6 +55,7 @@ async function main() {
     list: listSource,
     mock,
     listMockMarkets: env.GEMINI_MODE === 'mock',
+    listPractice: true,
     resolutionSource: env.RESOLUTION_SOURCE,
     resolvers: { production: prodPublic, sandbox: sandboxPublic },
   });

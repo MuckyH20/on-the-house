@@ -28,6 +28,8 @@ export type Resolution = { resolved: false } | { resolved: true; outcome: 'yes' 
  */
 export interface Venue {
   readonly simulated: boolean;
+  /** Per-symbol answer when one venue routes some symbols to a simulated book (practice games). */
+  simulatedFor?(symbol: string): boolean;
   quote(symbol: string): Promise<MarketQuote>;
   /** Buy `contracts` YES contracts at no more than `limitPriceMicros` each. Must be idempotent on clientOrderId. */
   buyYes(p: { symbol: string; contracts: number; limitPriceMicros: bigint; clientOrderId: string }): Promise<OrderResult>;

@@ -5,6 +5,7 @@ import { formatUsd } from '@oth/shared';
 import type { WalletClaim } from '@oth/shared/api';
 import { Card, Pill, Simulated } from '@/components/ui';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
+import { gameFor } from '@/lib/game';
 
 export default function MePage() {
   const burner = useBurner();
@@ -20,14 +21,14 @@ export default function MePage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-2xl font-bold">My refunds</h1>
+      <h1 className="text-2xl font-bold">My rewards</h1>
       {totalBack > 0n ? (
         <Card className="border-good bg-good-soft text-center">
           <div className="text-3xl">🎉</div>
           <div className="text-xl font-bold text-good">You got {formatUsd(totalBack)} back!</div>
         </Card>
       ) : null}
-      {pending > 0n ? <Card className="text-sm">Waiting on results: up to <b>{formatUsd(pending)}</b> could come back to you.</Card> : null}
+      {pending > 0n ? <Card className="text-sm">Waiting on games: up to <b>{formatUsd(pending)}</b> could come back to you.</Card> : null}
 
       {list.map((c) => {
         const spent = c.purchases.reduce((s, p) => s + BigInt(p.amount), 0n);
@@ -37,33 +38,33 @@ export default function MePage() {
           <Card key={c.campaign} className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="text-sm">
-                <div className="font-medium">UBC Coffee Cart</div>
-                <div className="text-muted">{c.refundBps / 100}% back if {condition}</div>
+                <div className="font-medium">{gameFor(c.market)?.matchup ?? 'Game-day promo'}</div>
+                <div className="text-muted">{c.refundBps >= 10_000 ? 'Free' : `${c.refundBps / 100}% back`} if {gameFor(c.market)?.condition ?? condition}</div>
               </div>
               {c.status === 'settled' ? (
-                c.outcome === 'yes' ? <Pill tone="good">Refunded {formatUsd(c.paidOut)}</Pill> : <Pill tone="muted">Didn’t happen</Pill>
+                c.outcome === 'yes' ? <Pill tone="good">Won · {formatUsd(c.paidOut)} back</Pill> : <Pill tone="muted">Lost this time</Pill>
               ) : (
-                <Pill tone="brand">Waiting</Pill>
+                <Pill tone="brand">Game on</Pill>
               )}
             </div>
             <div className="tabular text-sm">
               You spent {formatUsd(spent)} · {c.status === 'settled' && c.outcome === 'yes' ? <>you got <b>{formatUsd(c.paidOut)}</b> back</> : <>you’d get {formatUsd(promised)} back</>}
             </div>
-            {c.market?.simulated ? <Simulated /> : null}
+            {c.market?.simulated ? <Simulated label="SIMULATED (demo)" /> : null}
             <ul className="text-xs text-muted">
               {c.purchases.map((p) => (
                 <li key={p.signature}>
                   {p.at ? new Date(p.at * 1000).toLocaleTimeString() : 'just now'} · paid {formatUsd(p.amount)} ·{' '}
-                  <a className="underline" href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} target="_blank" rel="noreferrer">receipt</a>
+                  <a className="underline" href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} target="_blank" rel="noreferrer">public receipt</a>
                 </li>
               ))}
             </ul>
-            <Link href={`/proof/${c.campaign}`} className="text-xs text-brand underline">How this refund is guaranteed</Link>
+            <Link href={`/proof/${c.campaign}`} className="text-xs text-brand underline">How your refund is guaranteed</Link>
           </Card>
         );
       })}
-      {claims.data && list.length === 0 ? <Card className="text-sm text-muted">No purchases yet from this device.</Card> : null}
-      {wallet ? <div className="text-center text-xs text-muted">Demo wallet on this device: {short(wallet, 6)}</div> : null}
+      {claims.data && list.length === 0 ? <Card className="text-sm text-muted">No game-day orders yet on this device.</Card> : null}
+      {wallet ? <div className="text-center text-xs text-muted">Your rewards are saved on this device ({short(wallet, 4)}).</div> : null}
     </div>
   );
 }

@@ -121,14 +121,18 @@ pnpm dev:engine        # terminal 1
 pnpm dev:app           # terminal 2
 ```
 
-Open **http://localhost:3000/merchant**, launch a promo, open the shop, add demo dollars, and pay. Then watch the proof
-page.
+Open **http://localhost:3000**, tap **Start your promo**, add your shop and menu, launch, and you get a shareable link and a
+printable QR code. Open the link as a customer, add demo dollars, and pay — then watch the protection page.
+
+Shop owners sign in with **Privy** (email or Google; a wallet is created invisibly and stays under the owner's control).
+Set `NEXT_PUBLIC_PRIVY_APP_ID` in `app/.env.local`; without it the app runs as a single demo shop.
 
 No API keys? It still works — every integration has a simulated mode, clearly labeled **SIMULATED** in the app. Settings
 are explained in [`.env.example`](.env.example).
 
 Handy commands:
 - `pnpm demo:e2e` — runs a full YES and NO promo on devnet
+- `pnpm smoke:owner` — a shop owner signs their own shop and promo (the Privy path)
 - `pnpm verify:orders <order id>` — checks a hedge against Gemini's own records
 - `pnpm stream on` / `pnpm stream off` — start or stop the QuickNode stream
 - `pnpm test` — unit tests · `pnpm program:test` — Solana program tests

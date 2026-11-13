@@ -7,6 +7,7 @@ import { claimAta, type CampaignView } from '@oth/shared/program';
 import { z } from 'zod';
 import type { Repo } from './db';
 import { decodeBody, extractTransactions, NonceCache, verifyQuickNode } from './quicknode';
+import { checkShopSave } from './shops';
 import type { Hedger } from './hedger';
 import type { Ingest } from './ingest';
 import { isPubkey, type Registry } from './registry';
@@ -39,7 +40,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   const { env, chain, repo, registry, hedger, settler, markets, venue } = d;
   const app = Fastify({ logger: false });
   const origins = env.CORS_ORIGINS.trim() === '*' ? true : env.CORS_ORIGINS.split(',').map((s) => s.trim());
-  await app.register(cors, { origin: origins });
+  await app.register(cors, { origin: origins, methods: ['GET', 'HEAD', 'POST', 'PUT'] });
   const simulated = simulatedFlags(env);
 
   const notFound = (reply: FastifyReply, what: string) => reply.code(404).send({ error: `${what} not found` });
@@ -137,9 +138,23 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     return m ?? notFound(reply, 'market');
   });
 
-  app.get('/campaigns', async (): Promise<{ campaigns: CampaignSummary[] }> => {
+  // ---------------- shops ----------------
+  app.get('/shops/:merchant', async (req: FastifyRequest<{ Params: { merchant: string } }>, reply) => {
+    if (!isPubkey(req.params.merchant)) return reply.code(400).send({ error: 'invalid wallet address' });
+    return repo.getShop(req.params.merchant) ?? notFound(reply, 'shop');
+  });
+
+  app.put('/shops/:merchant', async (req: FastifyRequest<{ Params: { merchant: string } }>, reply) => {
+    if (!isPubkey(req.params.merchant)) return reply.code(400).send({ error: 'invalid wallet address' });
+    const r = checkShopSave(req.params.merchant, req.body);
+    if (!r.ok) return reply.code(400).send({ error: r.error });
+    repo.saveShop(r.profile);
+    return r.profile;
+  });
+
+  app.get('/campaigns', async (req: FastifyRequest<{ Querystring: { merchant?: string } }>): Promise<{ campaigns: CampaignSummary[] }> => {
     const out: CampaignSummary[] = [];
-    for (const c of registry.all()) {
+    for (const c of registry.all().filter((x) => !req.query.merchant || x.merchant === req.query.merchant)) {
       out.push({
         campaign: c,
         market: await marketFor(c.marketSymbol),

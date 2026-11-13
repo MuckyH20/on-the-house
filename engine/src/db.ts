@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { FillStatus, HedgeFill, StoredEvent } from '@oth/shared/api';
+import type { FillStatus, HedgeFill, ShopProfile, StoredEvent } from '@oth/shared/api';
 import type { OthEventName } from '@oth/shared/program';
 
 /**
@@ -30,6 +30,7 @@ export class Repo {
       );
       CREATE INDEX IF NOT EXISTS fills_campaign ON fills (campaign, created_at);
       CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS shops (merchant TEXT PRIMARY KEY, profile TEXT NOT NULL, updated_at INTEGER NOT NULL);
     `);
   }
 
@@ -123,6 +124,19 @@ export class Repo {
 
   setKv(key: string, value: unknown): void {
     this.db.prepare(`INSERT INTO kv (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`).run(key, JSON.stringify(value));
+  }
+
+  // ---- shops (public profile: name + menu) ----
+
+  getShop(merchant: string): ShopProfile | null {
+    const row = this.db.prepare(`SELECT profile FROM shops WHERE merchant = ?`).get(merchant) as { profile: string } | undefined;
+    return row ? (JSON.parse(row.profile) as ShopProfile) : null;
+  }
+
+  saveShop(p: ShopProfile): void {
+    this.db
+      .prepare(`INSERT INTO shops (merchant, profile, updated_at) VALUES (?, ?, ?) ON CONFLICT(merchant) DO UPDATE SET profile = excluded.profile, updated_at = excluded.updated_at`)
+      .run(p.merchant, JSON.stringify(p), p.updatedAt);
   }
 
   close(): void {

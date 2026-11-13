@@ -192,6 +192,33 @@ export interface WalletClaim {
   outcome: OutcomeName;
 }
 
+/** A shop's public profile (name + menu), owned by the merchant wallet. */
+export interface ShopItem {
+  id: string;
+  name: string;
+  /** Price in USDC base units (decimal string). */
+  price: string;
+}
+export interface ShopProfile {
+  merchant: string;
+  name: string;
+  items: ShopItem[];
+  updatedAt: number;
+}
+export interface ShopSaveRequest {
+  name: string;
+  items: ShopItem[];
+  /** unix ms; must be within 5 minutes of the server clock */
+  timestamp: number;
+  /** base58 ed25519 signature by the merchant wallet over shopSaveMessage(...) */
+  signature: string;
+}
+
+/** The exact text a shop owner signs to save their profile (shown in their wallet if it asks). */
+export function shopSaveMessage(merchant: string, name: string, items: ShopItem[], timestamp: number): string {
+  return `On the House — save my shop\nwallet: ${merchant}\nname: ${name}\nitems: ${JSON.stringify(items)}\ntime: ${timestamp}`;
+}
+
 export interface ApiError {
   error: string;
 }

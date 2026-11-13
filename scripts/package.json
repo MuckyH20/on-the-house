@@ -13,7 +13,8 @@
     "smoke:app": "tsx src/smoke-app.ts",
     "demo:sandbox": "tsx src/demo-sandbox.ts",
     "gemini:probe": "tsx src/gemini-probe.ts",
-    "stream": "tsx src/create-stream.ts"
+    "stream": "tsx src/create-stream.ts",
+    "smoke:owner": "tsx src/smoke-owner.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",
@@ -21,7 +22,9 @@
     "@solana/spl-token": "0.4.15",
     "@solana/web3.js": "1.99.0",
     "bn.js": "5.2.5",
+    "bs58": "6.0.0",
     "tsx": "4.23.15",
+    "tweetnacl": "1.0.3",
     "zod": "4.6.7"
   },
   "devDependencies": {

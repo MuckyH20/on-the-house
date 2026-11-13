@@ -132,7 +132,7 @@ export function friendlyTxError(msg: string): string {
   if (/LiabilityCapExceeded|0x177f/.test(msg)) return 'This promo is sold out.';
   if (/UnhedgedLimitExceeded|0x1780/.test(msg)) return 'Lots of orders right now — please try again in a few seconds.';
   if (/PremiumTooHigh|0x177d/.test(msg)) return 'Prices just moved. Please try again.';
-  if (/insufficient funds|0x1\b/.test(msg)) return 'Not enough money in your wallet. Tap "Add $20" first.';
+  if (/insufficient funds|0x1\b/.test(msg)) return 'Not enough balance. Tap "Add $20 (demo)" first.';
   return 'Payment failed. Please try again.';
 }
 

@@ -99,6 +99,7 @@ function PromoCard({ s }: { s: CampaignSummary }) {
   const c = s.campaign;
   const tone = { live: 'text-good', warn: 'text-warn', good: 'text-good', muted: 'text-muted' }[st.tone];
   const finished = c.status === 'settled' || c.status === 'cancelled' || c.salesDeadline * 1000 < Date.now();
+  const sellsUntil = new Date(c.salesDeadline * 1000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return (
     <div className="space-y-3 rounded-2xl border border-line bg-card p-3">
       {game ? <GameCard game={game} offer={offerText(c.refundBps / 100)} compact /> : null}
@@ -108,10 +109,14 @@ function PromoCard({ s }: { s: CampaignSummary }) {
       </div>
       <div className="grid grid-cols-3 gap-2 px-1 text-center text-xs text-muted">
         <div><div className="tabular text-base font-semibold text-ink">{c.purchaseCount}</div>orders</div>
-        <div><div className="tabular text-base font-semibold text-ink">{formatUsd(cents(c.totalSales))}</div>sales</div>
+        <div><div className="tabular text-base font-semibold text-ink">{formatUsd(cents(BigInt(c.totalSales) - BigInt(c.totalPremium)))}</div>you received</div>
         <div><div className="tabular text-base font-semibold text-ink">{formatUsd(cents(c.totalPremium))}</div>promo cost</div>
       </div>
+      {!finished && sellsUntil ? <div className="px-1 text-xs text-muted">Selling until {sellsUntil}</div> : null}
       {c.marketSymbol.startsWith('SIM-PRACTICE-') && c.status !== 'settled' ? <PracticeFinish symbol={c.marketSymbol} team={game?.team ?? 'Team'} /> : null}
+      {c.status !== 'cancelled' && c.purchaseCount > 0 ? (
+        <Link href={`/orders/${c.address}`} className="block rounded-lg bg-ink py-2 text-center text-sm font-medium text-white">Orders</Link>
+      ) : null}
       <div className="flex gap-2 text-sm">
         <Link href={`/p/${c.address}`} className="flex-1 rounded-lg border border-line py-2 text-center">Open page</Link>
         {!finished ? <Link href={`/p/${c.address}/print`} target="_blank" className="flex-1 rounded-lg border border-line py-2 text-center">Print sign</Link> : null}

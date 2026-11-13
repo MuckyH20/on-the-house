@@ -53,6 +53,44 @@ const faqs: [string, React.ReactNode][] = [
     </>,
   ],
   [
+    'Where does the money from my sales go?',
+    <>
+      Straight to your shop’s account the moment a customer pays — minus the promo cost you agreed to. “My promos” shows
+      what you received for every promo. (In this demo it’s test dollars; cashing out to your bank is the next step for a
+      real launch.)
+    </>,
+  ],
+  [
+    'How do my staff handle orders?',
+    <>
+      Open the <b>Orders</b> screen on a tablet or phone behind the counter. Each paid order appears instantly with a short
+      order number and what was ordered. Tap <b>Mark ready</b>, then <b>Picked up</b> — the customer sees the status on
+      their phone. It works like any order-ahead ticket.
+    </>,
+  ],
+  [
+    'What do customers need?',
+    <>
+      Just a phone. They scan your sign, order and pay — no app and no account. Signing in (email or Google) is optional
+      and keeps their rewards on any device.
+    </>,
+  ],
+  [
+    'Can I use my own card reader or register?',
+    <>
+      Not yet — today customers order and pay on their phone, like order-ahead. Connecting registers like Square and Toast
+      (so a promo is just a toggle) is the next step.
+    </>,
+  ],
+  [
+    'Is this gambling?',
+    <>
+      Customers don’t bet anything: they pay your normal price and might get money back. You pay a fixed promo cost, and
+      we buy the protection on Gemini, a regulated exchange. Rules for promotions differ by state, so check yours before
+      running one with real money — this isn’t legal advice.
+    </>,
+  ],
+  [
     'Is this real money?',
     <>
       Not yet. This demo runs on test networks (Solana devnet and Gemini’s sandbox) with demo dollars. Anything simulated
@@ -74,8 +112,9 @@ export default function HelpPage() {
         <ol className="mt-3 space-y-3 text-sm">
           <li><b>1. Sign in</b> with email or Google, then add your shop name and menu.</li>
           <li><b>2. Pick a game</b> — we suggest the next one — and an offer. You’ll see the exact cost.</li>
-          <li><b>3. Launch</b> and share your link or print the QR code for your counter.</li>
-          <li><b>4. That’s it.</b> If your team wins, customers are refunded automatically.</li>
+          <li><b>3. Launch</b> and print the QR sign for your counter (or share the link).</li>
+          <li><b>4. Serve orders</b> from the Orders screen — customers show their order number.</li>
+          <li><b>5. That’s it.</b> If your team wins, customers are refunded automatically.</li>
         </ol>
         <Link href="/start" className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Start your promo</Link>
       </section>

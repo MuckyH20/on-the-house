@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { formatUsd } from '@oth/shared';
-import type { CampaignState, Quote, ShopItem, ShopProfile } from '@oth/shared/api';
+import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
 import { GameCard } from '@/components/GameCard';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
 import { customerOffer, gameFor } from '@/lib/game';
@@ -91,6 +91,7 @@ export default function PromoPage() {
 
   async function pay() {
     if (!payer || total === 0n) return;
+    const lines = items.filter((m) => cart[m.id]).map((m) => ({ id: m.id, qty: cart[m.id]! }));
     setBusy('pay');
     setError(null);
     try {
@@ -110,6 +111,8 @@ export default function PromoPage() {
         throw new Error(friendlyTxError((e as Error).message));
       }
       setReceipt({ amount: res.amount, refund: res.refund ?? '0', signature, device: !usingAccount });
+      // Send what was ordered to the shop's order screen (checked against the payment on-chain).
+      void engine('/orders', { method: 'POST', body: JSON.stringify({ signature, items: lines }) }).catch(() => {});
       setCart({});
       void engine(`/campaigns/${campaign}/kick`, { method: 'POST', body: '{}' }).catch(() => {});
       void refreshBalance();
@@ -135,7 +138,12 @@ export default function PromoPage() {
           This promo is over. {c.outcome === 'yes' ? `${game?.team ?? 'They'} won — everyone who ordered got their money back!` : `${game?.team ?? 'They'} didn’t win this time.`}
         </div>
       ) : game ? (
-        <GameCard game={game} offer={customerOffer(refundPct)} audience="customer" />
+        <>
+          <GameCard game={game} offer={customerOffer(refundPct)} audience="customer" />
+          <p className="px-1 text-center text-xs text-muted">
+            Pay the normal price now. If {game.team} wins, {refundPct >= 100 ? 'all of it' : `${refundPct}% of it`} comes back to you automatically right after the final{game.finalAt ? ` (${game.finalAt})` : ''}.
+          </p>
+        </>
       ) : null}
       {state.data?.simulated.gemini && !ended ? (
         <div className="text-center text-xs text-muted">Practice game · SIMULATED result — your order and refund are real demo transactions</div>
@@ -207,7 +215,7 @@ export default function PromoPage() {
             </div>
           </div>
           {game ? <div className="text-sm">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back — automatically. No need to do anything.</div> : null}
-          <div className="text-xs text-muted">Show this order number at the counter.</div>
+          <OrderStatusLine signature={receipt.signature} />
           {receipt.device && privyEnabled() ? (
             <div className="rounded-lg bg-paper p-2.5 text-xs">
               This reward is saved on this phone. <button onClick={account.login} className="font-medium text-brand underline">Sign in</button> before your next order to keep rewards on any device.
@@ -264,4 +272,13 @@ function WalletQr({ campaign, amount, items, refund, onPaid }: { campaign: strin
       <div className="text-center text-xs text-muted">Scan with a Solana wallet app (test network). Needs demo dollars in that wallet.</div>
     </div>
   );
+}
+
+/** Live pickup status for the customer's order (the shop marks it ready / picked up on its order screen). */
+function OrderStatusLine({ signature }: { signature: string }) {
+  const order = usePoll(() => engine<ShopOrder>(`/orders/${signature}`), 4_000, [signature]);
+  const status = order.data?.status ?? 'new';
+  const text = { new: 'Preparing your order — show this number at the counter.', ready: 'Ready for pickup ✓', done: 'Picked up — enjoy!' }[status];
+  const tone = status === 'ready' ? 'bg-good-soft text-good font-semibold' : 'bg-paper text-muted';
+  return <div className={`rounded-lg px-3 py-2 text-sm ${tone}`}>{text}</div>;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { premiumBpsFor, priceToMicros, parseUsd } from '@oth/shared';
-import { shopSaveMessage, type MarketSummary, type ShopItem, type ShopProfile } from '@oth/shared/api';
+import { orderStatusMessage, shopSaveMessage, type MarketSummary, type OrderStatus, type ShopItem, type ShopOrder, type ShopProfile } from '@oth/shared/api';
 import { engine, getJson } from './client';
 import type { Owner } from './owner';
 
@@ -102,4 +102,20 @@ export const toCents = (usd: string | number) => parseUsd(String(usd));
 export function cents(baseUnits: bigint | string | number): bigint {
   const v = BigInt(baseUnits);
   return ((v + 5_000n) / 10_000n) * 10_000n;
+}
+
+/** Mark an order ready / picked up. Privy owners sign with their wallet; the demo shop is signed by the server. */
+export async function setOrderStatus(owner: Owner, orderSig: string, status: OrderStatus): Promise<ShopOrder> {
+  if (owner.mode === 'demo' || !owner.signMessage || !owner.address) {
+    return getJson<ShopOrder>('/api/order-status', { method: 'PUT', body: JSON.stringify({ signature: orderSig, status }) });
+  }
+  const timestamp = Date.now();
+  const signature = await owner.signMessage(orderStatusMessage(owner.address, orderSig, status, timestamp));
+  return engine<ShopOrder>(`/orders/${orderSig}/status`, { method: 'PUT', body: JSON.stringify({ status, timestamp, signature }) });
+}
+
+/** "7:48 PM" — when a promo stops selling (sales close SALES_CUTOFF minutes before the game's final). */
+export function salesUntil(closesAt: string | null, cutoffMinutes = 12): string | null {
+  if (!closesAt) return null;
+  return new Date(Date.parse(closesAt) - cutoffMinutes * 60_000).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }

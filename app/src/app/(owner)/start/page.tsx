@@ -15,6 +15,7 @@ import {
   DEFAULT_ITEMS,
   isPracticeGame,
   practiceGames,
+  salesUntil,
   defaultMaxCostPct,
   launchPromo,
   loadShop,
@@ -217,8 +218,9 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
           </div>
         </div>
       ) : null}
-      <div className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted">
-        {isPracticeGame(market) ? 'Practice game' : symbol ? 'Your game' : 'Next game'} · final {startsIn(market.closesAt)}
+      <div className="mt-4 flex items-baseline justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+        <span>{isPracticeGame(market) ? 'Practice game' : symbol ? 'Your game' : 'Next game'} · final {startsIn(market.closesAt)}</span>
+        {salesUntil(market.closesAt) ? <span className="normal-case tracking-normal">Selling until {salesUntil(market.closesAt)}</span> : null}
       </div>
       <div className="mt-2">
         <GameCard game={game} offer={offerText(pct)} />
@@ -293,7 +295,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
             <input type="range" min={25} max={1000} step={25} value={capUsd} onChange={(e) => setCapUsd(Number(e.target.value))} className="w-full" />
             <span className="text-xs text-muted">The promo stops selling once this much could be refunded.</span>
           </label>
-          <p className="text-xs text-muted">Sales close automatically shortly before the game ends.</p>
+          <p className="text-xs text-muted">Sales stop automatically 12 minutes before the final, so every order can be protected.</p>
         </div>
       </details>
 
@@ -345,7 +347,17 @@ function LiveStep({ campaign, shopName }: { campaign: string; shopName: string }
           Print counter sign
         </Link>
       </div>
-      <Link href={`/p/${campaign}`} className="mt-3 block rounded-xl bg-brand py-3.5 text-center font-semibold text-white">See what customers see</Link>
+      <div className="mt-5 rounded-2xl border border-line bg-card p-4 text-sm">
+        <div className="font-semibold">What happens next</div>
+        <ol className="mt-2 space-y-1.5 text-muted">
+          <li><b className="text-ink">1.</b> Put the sign on your counter (or share the link).</li>
+          <li><b className="text-ink">2.</b> Customers scan, order and pay on their phone — they get an order number.</li>
+          <li><b className="text-ink">3.</b> Keep the <b className="text-ink">Orders</b> screen open: hand over each order by its number.</li>
+          <li><b className="text-ink">4.</b> After the final, refunds (if any) are paid automatically. Nothing for you to do.</li>
+        </ol>
+      </div>
+      <Link href={`/orders/${campaign}`} className="mt-3 block rounded-xl bg-ink py-3.5 text-center font-semibold text-white">Open the Orders screen</Link>
+      <Link href={`/p/${campaign}`} className="mt-3 block rounded-xl border border-line bg-card py-3 text-center font-medium">See what customers see</Link>
       <Link href="/dashboard" className="mt-3 block text-center text-sm text-muted underline">Go to my promos</Link>
     </Shell>
   );

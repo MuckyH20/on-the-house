@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Repo } from './db';
 import { decodeBody, extractTransactions, NonceCache, verifyQuickNode } from './quicknode';
 import { checkShopSave } from './shops';
+import { attachOrder, setOrderStatus } from './orders';
 import type { Hedger } from './hedger';
 import type { Ingest } from './ingest';
 import { isPubkey, type Registry } from './registry';
@@ -140,6 +141,22 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     const m = await marketFor(req.params.symbol);
     return m ?? notFound(reply, 'market');
   });
+
+  // ---------------- orders (items + pickup status) ----------------
+  app.post('/orders', async (req, reply) => {
+    const r = await attachOrder(chain, repo, req.body);
+    if (!r.ok) return reply.code(r.status).send({ error: r.error });
+    registry.changed(r.order.campaign);
+    return r.order;
+  });
+  app.get('/orders/:signature', async (req: FastifyRequest<{ Params: { signature: string } }>, reply) => repo.getOrder(req.params.signature) ?? notFound(reply, 'order'));
+  app.put('/orders/:signature/status', async (req: FastifyRequest<{ Params: { signature: string } }>, reply) => {
+    const r = await setOrderStatus(chain, repo, req.params.signature, req.body);
+    if (!r.ok) return reply.code(r.status).send({ error: r.error });
+    registry.changed(r.order.campaign);
+    return r.order;
+  });
+  app.get('/campaigns/:id/orders', async (req: FastifyRequest<{ Params: { id: string } }>) => ({ orders: repo.ordersForCampaign(req.params.id) }));
 
   // ---------------- shops ----------------
   app.get('/shops/:merchant', async (req: FastifyRequest<{ Params: { merchant: string } }>, reply) => {

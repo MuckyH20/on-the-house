@@ -29,8 +29,10 @@ flowchart LR
 
 1. **The shop picks an event and a refund.** For example: 100% back if BTC is above $71,000 at 8 PM. The app shows the
    cost right away — *"This promo costs you 27.5% of each sale."*
-2. **A customer pays** like any normal checkout. They get a receipt that says *"If BTC is above $71,000, you get $4.00
-   back."* Behind the scenes they also get a refund token that can't be transferred.
+2. **A customer scans the counter sign, orders and pays on their phone** — like any order-ahead. They get an order
+   number and a receipt that says *"If BTC is above $71,000, you get $4.00 back."* Staff see the order on the shop's
+   **Orders** screen and hand it over by number. Behind the scenes the customer also gets a refund token that can't be
+   transferred (signing in with email/Google is optional and keeps rewards on any device).
 3. **Within seconds, the engine covers the refund** by buying YES contracts on Gemini (each pays $1 if the event
    happens), then writes that coverage onto Solana.
 4. **Anyone can check the coverage** on the public proof page: refunds promised vs. refunds covered, with links to every

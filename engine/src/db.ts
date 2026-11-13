@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { FillStatus, HedgeFill, ShopProfile, StoredEvent } from '@oth/shared/api';
+import type { FillStatus, HedgeFill, ShopOrder, ShopProfile, StoredEvent } from '@oth/shared/api';
 import type { OthEventName } from '@oth/shared/program';
 
 /**
@@ -31,6 +31,8 @@ export class Repo {
       CREATE INDEX IF NOT EXISTS fills_campaign ON fills (campaign, created_at);
       CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS shops (merchant TEXT PRIMARY KEY, profile TEXT NOT NULL, updated_at INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS orders (signature TEXT PRIMARY KEY, campaign TEXT NOT NULL, data TEXT NOT NULL, created_at INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS orders_campaign ON orders (campaign, created_at);
     `);
   }
 
@@ -137,6 +139,23 @@ export class Repo {
     this.db
       .prepare(`INSERT INTO shops (merchant, profile, updated_at) VALUES (?, ?, ?) ON CONFLICT(merchant) DO UPDATE SET profile = excluded.profile, updated_at = excluded.updated_at`)
       .run(p.merchant, JSON.stringify(p), p.updatedAt);
+  }
+
+  // ---- orders (items + pickup status) ----
+
+  getOrder(signature: string): ShopOrder | null {
+    const row = this.db.prepare(`SELECT data FROM orders WHERE signature = ?`).get(signature) as { data: string } | undefined;
+    return row ? (JSON.parse(row.data) as ShopOrder) : null;
+  }
+
+  saveOrder(o: ShopOrder): void {
+    this.db
+      .prepare(`INSERT INTO orders (signature, campaign, data, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(signature) DO UPDATE SET data = excluded.data`)
+      .run(o.signature, o.campaign, JSON.stringify(o), o.createdAt);
+  }
+
+  ordersForCampaign(campaign: string): ShopOrder[] {
+    return this.db.prepare(`SELECT data FROM orders WHERE campaign = ? ORDER BY created_at DESC`).all(campaign).map((r) => JSON.parse(String((r as { data: string }).data)) as ShopOrder);
   }
 
   close(): void {

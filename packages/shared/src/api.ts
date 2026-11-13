@@ -219,6 +219,32 @@ export function shopSaveMessage(merchant: string, name: string, items: ShopItem[
   return `On the House — save my shop\nwallet: ${merchant}\nname: ${name}\nitems: ${JSON.stringify(items)}\ntime: ${timestamp}`;
 }
 
+/** An order's items and pickup status (off-chain; the payment itself is the on-chain purchase). */
+export type OrderStatus = 'new' | 'ready' | 'done';
+export interface OrderLine {
+  id: string;
+  name: string;
+  qty: number;
+  /** unit price, USDC base units */
+  price: string;
+}
+export interface ShopOrder {
+  /** purchase transaction signature (the order id; short number = first 5 chars) */
+  signature: string;
+  campaign: string;
+  buyer: string;
+  amount: string;
+  refund: string;
+  lines: OrderLine[];
+  status: OrderStatus;
+  createdAt: number;
+  updatedAt: number;
+}
+/** The exact text a shop owner signs to change an order's status. */
+export function orderStatusMessage(merchant: string, signature: string, status: OrderStatus, timestamp: number): string {
+  return `On the House — order ${signature} is ${status}\nwallet: ${merchant}\ntime: ${timestamp}`;
+}
+
 export interface ApiError {
   error: string;
 }

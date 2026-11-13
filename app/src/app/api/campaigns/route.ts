@@ -26,6 +26,18 @@ export async function POST(req: Request) {
     if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
     const b = parsed.data;
     if (b.maxUnhedgedUsd > b.liabilityCapUsd) throw new HttpError(400, 'Max uncovered refunds cannot exceed the total refund cap.');
+    // Sales must stop before the venue stops trading the market (else sales can't be hedged).
+    const [market, info] = await Promise.all([
+      engineFetch<{ closesAt: string | null; status: string }>(`/markets/${encodeURIComponent(b.marketSymbol)}`).catch(() => null),
+      engineFetch<{ salesCutoffMinutes?: number }>('/health').catch(() => null),
+    ]);
+    let deadlineMinutes = b.deadlineMinutes;
+    if (market?.closesAt) {
+      const cutoff = info?.salesCutoffMinutes ?? 12;
+      const minutesLeft = Math.floor((Date.parse(market.closesAt) - Date.now()) / 60_000) - cutoff;
+      if (minutesLeft < 1) throw new HttpError(409, `This market stops trading in under ${cutoff} minutes — pick one that closes later.`);
+      deadlineMinutes = Math.min(deadlineMinutes, minutesLeft);
+    }
     const { connection, program, operator, merchant, usdcMint } = await serverCtx();
     const { ix, campaign } = await createCampaignIx(program, {
       payer: operator.publicKey,
@@ -39,13 +51,13 @@ export async function POST(req: Request) {
         maxPremiumBps: Math.round(b.maxCostPct * 100),
         liabilityCap: parseUsd(b.liabilityCapUsd.toFixed(2)),
         maxUnhedged: parseUsd(b.maxUnhedgedUsd.toFixed(2)),
-        salesDeadline: Math.floor(Date.now() / 1000) + b.deadlineMinutes * 60,
+        salesDeadline: Math.floor(Date.now() / 1000) + deadlineMinutes * 60,
       },
     });
     const signature = await sendAndConfirmTransaction(connection, new Transaction().add(ix), [operator, merchant], { commitment: 'confirmed' });
     // Make sure the engine knows about it right away (it would also pick it up from the event stream).
     await engineFetch(`/campaigns/${campaign.toBase58()}/state`).catch(() => null);
-    return Response.json({ campaign: campaign.toBase58(), signature });
+    return Response.json({ campaign: campaign.toBase58(), signature, deadlineMinutes });
   } catch (e) {
     return jsonError(e);
   }

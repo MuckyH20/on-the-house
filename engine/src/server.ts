@@ -44,6 +44,10 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
 
   const notFound = (reply: FastifyReply, what: string) => reply.code(404).send({ error: `${what} not found` });
 
+  const cutoffMs = env.SALES_CUTOFF_MINUTES * 60_000;
+  /** True when the venue will stop taking orders before we could hedge a sale (Gemini: ~10 min before close). */
+  const closesSoon = (m: MarketSummary | null) => !!m?.closesAt && Date.parse(m.closesAt) - Date.now() < cutoffMs;
+
   async function marketFor(symbol: string): Promise<MarketSummary | null> {
     return markets.getMarket(symbol).catch(() => null);
   }
@@ -98,7 +102,8 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     };
   }
 
-  app.get('/health', async (): Promise<EngineInfo> => ({
+  app.get('/health', async (): Promise<EngineInfo & { salesCutoffMinutes: number }> => ({
+    salesCutoffMinutes: env.SALES_CUTOFF_MINUTES,
     ok: true,
     cluster: chain.cluster,
     programId: chain.programId.toBase58(),
@@ -113,14 +118,13 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   }));
 
   app.get('/markets', async (req: FastifyRequest<{ Querystring: { q?: string; category?: string; limit?: string } }>) => {
-    const now = new Date().toISOString();
     const q = req.query.q?.trim().toLowerCase();
     const cat = req.query.category?.trim().toLowerCase();
     const limit = Math.min(Math.max(Number(req.query.limit) || 60, 1), 500);
     const all = (await markets.listMarkets()).filter(
       (m) =>
         m.status === 'open' &&
-        (!m.closesAt || m.closesAt > now) &&
+        (!m.closesAt || Date.parse(m.closesAt) - Date.now() >= cutoffMs) &&
         (!q || `${m.title} ${m.symbol}`.toLowerCase().includes(q)) &&
         (!cat || m.category.toLowerCase() === cat),
     );
@@ -200,6 +204,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     else if (nowSec > c.salesDeadline) reason = 'This promo has ended.';
     else if (hedger.pausedByHedger(c.address)) reason = 'This promo is paused for a moment.';
     else if (c.status === 'paused') reason = 'This promo is paused.';
+    else if (closesSoon(await marketFor(c.marketSymbol))) reason = 'Sales for this promo have closed.';
     else if (q.askMicros === null) reason = 'This promo is not available right now.';
     else if (q.askMicros > maxPrice) reason = 'This promo is paused for a moment.';
     const quote: Quote = {

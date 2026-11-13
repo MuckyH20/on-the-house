@@ -23,6 +23,7 @@
     "smoke:app": "pnpm --filter @oth/scripts smoke:app",
     "demo:sandbox": "pnpm --filter @oth/scripts demo:sandbox",
     "gemini:probe": "pnpm --filter @oth/scripts gemini:probe",
-    "stream": "pnpm --filter @oth/scripts stream"
+    "stream": "pnpm --filter @oth/scripts stream",
+    "verify:orders": "pnpm --filter @oth/engine verify:orders"
   }
 }

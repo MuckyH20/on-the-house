@@ -93,6 +93,8 @@ export const engineEnvSchema = z
     /** Starting YES ask for SIMULATED markets, in dollars per $1 contract. */
     MOCK_DEFAULT_ASK: withDefault(z.coerce.number().gt(0).lt(1), 0.25),
 
+    /** Gemini stops accepting orders ~10 min before a market closes (422 "Invalid price"); stop sales earlier. */
+    SALES_CUTOFF_MINUTES: withDefault(z.coerce.number().int().min(0).max(240), 12),
     HEDGE_MAX_ATTEMPTS: withDefault(z.coerce.number().int().min(1).max(20), 5),
     HEDGE_RETRY_BASE_MS: withDefault(z.coerce.number().int().min(50), 1000),
     SETTLER_POLL_MS: withDefault(z.coerce.number().int().min(250), 5000),

@@ -83,7 +83,8 @@ on devnet) handles the money:
 
 - **One trust step.** Gemini pays the platform, and the platform moves that money into the refund pool on Solana. The
   program guarantees the pool pays the right customers the right amounts, but not that the platform fills it. In this
-  demo, that step is simulated with test dollars.
+  demo, that step is simulated with test dollars. Gemini could remove this step entirely by paying contract winnings
+  straight to a Solana address in USDC — then the refund pool would fill itself the moment a market settles.
 - **A few seconds of exposure.** Between a sale and its hedge, the shop isn't covered yet. The on-chain cap limits how
   much.
 - **Thin markets.** If contracts can't be bought at a fair price, sales pause instead of going uncovered. Gemini also
@@ -112,13 +113,6 @@ Handy commands:
 - `pnpm verify:orders <order id>` — checks a hedge against Gemini's own records
 - `pnpm stream on` / `pnpm stream off` — start or stop the QuickNode stream
 - `pnpm test` — unit tests · `pnpm program:test` — Solana program tests
-
-## What's next
-
-- Move Gemini payouts into the refund pool automatically, so there's no trust step.
-- Plug into real point-of-sale systems (Square, Shopify) so a promo is just a toggle.
-- More kinds of events — sports and weather ("free hot cocoa if it snows").
-- An audit and a move to real money.
 
 ## License
 

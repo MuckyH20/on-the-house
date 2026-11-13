@@ -19,7 +19,6 @@
     "setup:devnet": "pnpm --filter @oth/scripts setup:devnet",
     "create:stream": "pnpm --filter @oth/scripts create:stream",
     "demo:e2e": "pnpm --filter @oth/scripts demo:e2e",
-    "check:env": "pnpm --filter @oth/scripts check:env",
     "smoke:app": "pnpm --filter @oth/scripts smoke:app",
     "demo:sandbox": "pnpm --filter @oth/scripts demo:sandbox",
     "gemini:probe": "pnpm --filter @oth/scripts gemini:probe",

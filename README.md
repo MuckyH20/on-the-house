@@ -83,13 +83,32 @@ on devnet) handles the money:
 
 - **One trust step.** Gemini pays the platform, and the platform moves that money into the refund pool on Solana. The
   program guarantees the pool pays the right customers the right amounts, but not that the platform fills it. In this
-  demo, that step is simulated with test dollars. Gemini could remove this step entirely by paying contract winnings
-  straight to a Solana address in USDC — then the refund pool would fill itself the moment a market settles.
+  demo, that step is simulated with test dollars. Today the engine is the bridge, and it posts a record of every hedge
+  on Solana — see below for how Gemini could remove the need to trust us at all.
 - **A few seconds of exposure.** Between a sale and its hedge, the shop isn't covered yet. The on-chain cap limits how
   much.
 - **Thin markets.** If contracts can't be bought at a fair price, sales pause instead of going uncovered. Gemini also
   stops trading about 10 minutes before a market closes, so promos stop selling 12 minutes before.
 - **It's all test money** right now — Solana devnet and the Gemini sandbox.
+
+## What Gemini could add
+
+As far as we know, Gemini doesn't offer any of these today. Each one would remove the trust step above — so no one has
+to take our engine's word for anything.
+
+1. **Signed statements (simplest).** Gemini signs short messages like *"Account X holds 1,240 YES contracts on market M"*
+   and *"Market M resolved YES."* Our engine passes them to the Solana program, which checks the signature with
+   Solana's built-in Ed25519 verification before updating coverage or paying out. Then users only trust Gemini — a
+   regulated exchange that already holds the money.
+2. **Results posted on Solana.** Gemini publishes market outcomes on-chain itself, like Pyth does for prices. Our program
+   just reads the answer.
+3. **Contracts as Solana tokens.** Gemini's contracts live on Solana. Our program holds them and cashes them in
+   automatically, with no middleman at all.
+
+What we can do without Gemini's help:
+- **Shop pre-funds refunds.** The shop locks the maximum refund in the program upfront, so payouts never depend on our
+  engine moving money.
+- **Double-check results.** Confirm price-based outcomes (like "BTC above $71,000") against Pyth's on-chain price feed.
 
 ## Run it yourself
 

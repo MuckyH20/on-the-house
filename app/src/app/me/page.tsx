@@ -6,14 +6,28 @@ import type { WalletClaim } from '@oth/shared/api';
 import { Card, Pill, Simulated } from '@/components/ui';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
+import { orderNumber } from '@/lib/order';
+import { privyEnabled, useOwner } from '@/lib/owner';
 
 export default function MePage() {
   const burner = useBurner();
+  const account = useOwner();
   const wallet = burner?.publicKey.toBase58() ?? null;
+  const accountWallet = account.authenticated ? account.address : null;
+  // Rewards on this device's wallet plus the signed-in account's wallet (if any).
   const claims = usePoll(
-    async () => (wallet ? engine<{ claims: WalletClaim[] }>(`/wallets/${wallet}/claims`) : null),
+    async () => {
+      const wallets = [wallet, accountWallet].filter((w): w is string => !!w && w !== null);
+      if (!wallets.length) return null;
+      const lists = await Promise.all(
+        wallets.map((w) =>
+          engine<{ claims: WalletClaim[] }>(`/wallets/${w}/claims`).then((r) => r.claims.map((c) => ({ ...c, where: w === accountWallet ? 'account' : 'device' }) as WalletClaim & { where: string })),
+        ),
+      );
+      return { claims: lists.flat() };
+    },
     3_000,
-    [wallet],
+    [wallet, accountWallet],
   );
   const list = claims.data?.claims ?? [];
   const totalBack = list.reduce((s, c) => s + BigInt(c.paidOut), 0n);
@@ -22,6 +36,18 @@ export default function MePage() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       <h1 className="text-2xl font-bold">My rewards</h1>
+      {privyEnabled() ? (
+        account.authenticated ? (
+          <div className="flex items-center justify-between text-xs text-muted">
+            <span>Signed in{account.label ? ` as ${account.label}` : ''} — showing this device and your account</span>
+            <button onClick={() => void account.logout()} className="underline">Sign out</button>
+          </div>
+        ) : (
+          <button onClick={account.login} disabled={!account.ready} className="w-full rounded-xl border border-line bg-card py-2.5 text-sm">
+            Sign in to see rewards from your other devices
+          </button>
+        )
+      ) : null}
       {totalBack > 0n ? (
         <Card className="border-good bg-good-soft text-center">
           <div className="text-3xl">🎉</div>
@@ -35,7 +61,7 @@ export default function MePage() {
         const promised = c.purchases.reduce((s, p) => s + BigInt(p.refund), 0n);
         const condition = c.market?.condition ?? c.marketSymbol;
         return (
-          <Card key={c.campaign} className="space-y-2">
+          <Card key={`${c.campaign}-${(c as { where?: string }).where ?? ''}`} className="space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div className="text-sm">
                 <div className="font-medium">{gameFor(c.market)?.matchup ?? 'Game-day promo'}</div>
@@ -50,11 +76,14 @@ export default function MePage() {
             <div className="tabular text-sm">
               You spent {formatUsd(spent)} · {c.status === 'settled' && c.outcome === 'yes' ? <>you got <b>{formatUsd(c.paidOut)}</b> back</> : <>you’d get {formatUsd(promised)} back</>}
             </div>
-            {c.market?.simulated ? <Simulated label="SIMULATED (demo)" /> : null}
+            <div className="flex flex-wrap gap-2">
+              {c.market?.simulated || c.marketSymbol.startsWith('SIM-') ? <Simulated label="SIMULATED (practice)" /> : null}
+              {privyEnabled() ? <span className="text-[11px] text-muted">{(c as { where?: string }).where === 'account' ? 'In your account' : 'On this device'}</span> : null}
+            </div>
             <ul className="text-xs text-muted">
               {c.purchases.map((p) => (
                 <li key={p.signature}>
-                  {p.at ? new Date(p.at * 1000).toLocaleTimeString() : 'just now'} · paid {formatUsd(p.amount)} ·{' '}
+                  Order #{orderNumber(p.signature)} · {p.at ? new Date(p.at * 1000).toLocaleTimeString() : 'just now'} · paid {formatUsd(p.amount)} ·{' '}
                   <a className="underline" href={`https://explorer.solana.com/tx/${p.signature}?cluster=devnet`} target="_blank" rel="noreferrer">public receipt</a>
                 </li>
               ))}

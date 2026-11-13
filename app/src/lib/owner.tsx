@@ -34,14 +34,17 @@ export function useOwner(): Owner {
 
 const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '';
 
-export function OwnerProvider({ children }: { children: ReactNode }) {
-  if (!PRIVY_APP_ID) return <DemoOwner>{children}</DemoOwner>;
+/** Is Privy configured (real sign-in), or is this the single demo shop? */
+export const privyEnabled = () => !!PRIVY_APP_ID;
+
+export function OwnerProvider({ children, title = 'Sign in to your shop', demo = true }: { children: ReactNode; title?: string; demo?: boolean }) {
+  if (!PRIVY_APP_ID) return demo ? <DemoOwner>{children}</DemoOwner> : <NoAccount>{children}</NoAccount>;
   return (
     <PrivyProvider
       appId={PRIVY_APP_ID}
       config={{
         loginMethods: ['email', 'google'],
-        appearance: { walletChainType: 'solana-only', accentColor: '#b45309', theme: 'light', landingHeader: 'Sign in to your shop' },
+        appearance: { walletChainType: 'solana-only', accentColor: '#b45309', theme: 'light', landingHeader: title },
         embeddedWallets: { solana: { createOnLogin: 'users-without-wallets' } },
       }}
     >
@@ -75,6 +78,15 @@ function PrivyOwner({ children }: { children: ReactNode }) {
         : null,
     }),
     [ready, authenticated, walletsReady, wallet, user, login, logout, signTransaction, signMessage],
+  );
+  return <OwnerContext.Provider value={value}>{children}</OwnerContext.Provider>;
+}
+
+/** Customer pages without Privy: no accounts at all (device wallet only). */
+function NoAccount({ children }: { children: ReactNode }) {
+  const value = useMemo<Owner>(
+    () => ({ mode: 'demo', ready: true, authenticated: false, address: null, label: null, login: () => {}, logout: async () => {}, signTransaction: null, signMessage: null }),
+    [],
   );
   return <OwnerContext.Provider value={value}>{children}</OwnerContext.Provider>;
 }

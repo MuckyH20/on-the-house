@@ -5,6 +5,7 @@ import { formatBps, formatUsd, microsToPrice } from '@oth/shared';
 import type { CampaignState, StoredEvent } from '@oth/shared/api';
 import { CoverageBar, Simulated } from '@/components/ui';
 import { gameFor } from '@/lib/game';
+import { orderNumber } from '@/lib/order';
 import { short, useEngineStream } from '@/lib/client';
 
 const tx = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
@@ -12,7 +13,7 @@ const addr = (a: string) => `https://explorer.solana.com/address/${a}?cluster=de
 
 const EVENT_LABEL: Record<string, (e: StoredEvent) => string> = {
   campaignCreated: () => 'Promo launched',
-  purchaseEvent: (e) => `Order of ${formatUsd(String(e.data.amount))} — ${formatUsd(String(e.data.refund))} refund promised`,
+  purchaseEvent: (e) => `Order #${orderNumber(e.signature)} · ${formatUsd(String(e.data.amount))} — ${formatUsd(String(e.data.refund))} refund promised`,
   hedgeRecorded: (e) => `Protection bought: ${e.data.contractsAdded} × $1 contracts at $${microsToPrice(BigInt(String(e.data.avgPriceMicros)))}`,
   campaignPauseChanged: (e) => (e.data.paused ? 'Sales paused' : 'Sales resumed'),
   campaignSettled: (e) => `Final result: ${String(e.data.outcome) === 'yes' ? 'won' : 'lost'}`,
@@ -75,6 +76,25 @@ export default function ProofPage() {
         ) : null}
         {s.hedger.pausedByHedger ? <div className="rounded-xl bg-warn-soft p-3 text-sm text-warn">Sales are paused because protection got more expensive than the shop allowed. They resume automatically.</div> : null}
       </section>
+
+      {(() => {
+        const orders = s.events.filter((e) => e.name === 'purchaseEvent');
+        if (!orders.length) return null;
+        return (
+          <section className="rounded-2xl border border-line bg-card p-4">
+            <h2 className="text-sm font-semibold">Orders ({orders.length})</h2>
+            <div className="mt-2 divide-y divide-line text-sm">
+              {orders.slice(0, 20).map((e) => (
+                <div key={`${e.signature}:${e.index}`} className="flex items-center gap-3 py-2">
+                  <span className="font-mono font-semibold tracking-wider">#{orderNumber(e.signature)}</span>
+                  <span className="tabular flex-1 text-muted">{formatUsd(String(e.data.amount))}</span>
+                  <span className="text-xs text-muted">{e.blockTime ? new Date(e.blockTime * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'just now'}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       <details className="rounded-2xl border border-line bg-card p-4">
         <summary className="cursor-pointer text-sm font-semibold">For the curious: the public record</summary>

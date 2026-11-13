@@ -11,18 +11,31 @@ import { GameCard } from '@/components/GameCard';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
 import { customerOffer, gameFor } from '@/lib/game';
 import { DEMO_SHOP } from '@/lib/shop';
+import { orderNumber } from '@/lib/order';
+import { privyEnabled, useOwner } from '@/lib/owner';
 
 type PayResponse = { transaction: string; amount: string; refund?: string; premium: string };
+
+const b64ToBytes = (b64: string) => Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+const bytesToB64 = (bytes: Uint8Array) => {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin);
+};
 
 export default function PromoPage() {
   const { campaign } = useParams<{ campaign: string }>();
   const burner = useBurner();
+  const account = useOwner();
+  // Signed-in customers pay from their own account wallet (rewards follow them); otherwise this device's wallet.
+  const usingAccount = account.authenticated && !!account.address && !!account.signTransaction;
+  const payer = usingAccount ? account.address : (burner?.publicKey.toBase58() ?? null);
   const [shop, setShop] = useState<Pick<ShopProfile, 'name' | 'items'> | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [balance, setBalance] = useState<bigint | null>(null);
   const [busy, setBusy] = useState<'pay' | 'faucet' | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<{ amount: string; refund: string; signature: string } | null>(null);
+  const [receipt, setReceipt] = useState<{ amount: string; refund: string; signature: string; device: boolean } | null>(null);
   const [showWallet, setShowWallet] = useState(false);
 
   const state = usePoll(() => engine<CampaignState>(`/campaigns/${campaign}/state`), 5_000, [campaign]);
@@ -51,22 +64,23 @@ export default function PromoPage() {
   }, [receipt]);
 
   async function refreshBalance() {
-    if (!burner) return;
+    if (!payer) return;
     usdcMint.current ??= new PublicKey((await engine<{ usdcMint: string }>('/health')).usdcMint);
-    const bal = await connection().getTokenAccountBalance(getAssociatedTokenAddressSync(usdcMint.current, burner.publicKey), 'confirmed').catch(() => null);
+    const bal = await connection().getTokenAccountBalance(getAssociatedTokenAddressSync(usdcMint.current, new PublicKey(payer)), 'confirmed').catch(() => null);
     setBalance(BigInt(bal?.value.amount ?? '0'));
   }
   useEffect(() => {
+    setBalance(null);
     void refreshBalance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [burner]);
+  }, [payer]);
 
   async function addFunds() {
-    if (!burner) return;
+    if (!payer) return;
     setBusy('faucet');
     setError(null);
     try {
-      await getJson('/api/faucet', { method: 'POST', body: JSON.stringify({ wallet: burner.publicKey.toBase58() }) });
+      await getJson('/api/faucet', { method: 'POST', body: JSON.stringify({ wallet: payer }) });
       await refreshBalance();
     } catch (e) {
       setError((e as Error).message);
@@ -76,21 +90,26 @@ export default function PromoPage() {
   }
 
   async function pay() {
-    if (!burner || total === 0n) return;
+    if (!payer || total === 0n) return;
     setBusy('pay');
     setError(null);
     try {
       const res = await getJson<PayResponse>(`/api/pay/${campaign}?amount=${formatUsd(total).slice(1).replace(/,/g, '')}&item=${encodeURIComponent(summary)}`, {
         method: 'POST',
-        body: JSON.stringify({ account: burner.publicKey.toBase58() }),
+        body: JSON.stringify({ account: payer }),
       });
       let signature: string;
       try {
-        signature = await signAndSend(res.transaction, burner);
+        if (usingAccount && account.signTransaction) {
+          const signed = await account.signTransaction(b64ToBytes(res.transaction));
+          signature = (await getJson<{ signature: string }>('/api/submit', { method: 'POST', body: JSON.stringify({ transaction: bytesToB64(signed) }) })).signature;
+        } else {
+          signature = await signAndSend(res.transaction, burner!);
+        }
       } catch (e) {
         throw new Error(friendlyTxError((e as Error).message));
       }
-      setReceipt({ amount: res.amount, refund: res.refund ?? '0', signature });
+      setReceipt({ amount: res.amount, refund: res.refund ?? '0', signature, device: !usingAccount });
       setCart({});
       void engine(`/campaigns/${campaign}/kick`, { method: 'POST', body: '{}' }).catch(() => {});
       void refreshBalance();
@@ -151,7 +170,7 @@ export default function PromoPage() {
         {total > 0n && quote.data?.refund && !ended && game ? (
           <div className="rounded-xl bg-good-soft p-2.5 text-sm text-good">If {game.team} wins, you get <b>{formatUsd(quote.data.refund)}</b> back — automatically.</div>
         ) : null}
-        <button onClick={() => void pay()} disabled={!burner || total === 0n || busy !== null || !available || !!ended || (balance !== null && balance < total)} className="w-full rounded-xl bg-brand py-3.5 text-base font-semibold text-white disabled:opacity-40">
+        <button onClick={() => void pay()} disabled={!payer || total === 0n || busy !== null || !available || !!ended || (balance !== null && balance < total)} className="w-full rounded-xl bg-brand py-3.5 text-base font-semibold text-white disabled:opacity-40">
           {busy === 'pay' ? 'Paying…' : `Pay ${total > 0n ? formatUsd(total) : ''}`}
         </button>
         <div className="flex items-center justify-between text-sm">
@@ -159,17 +178,42 @@ export default function PromoPage() {
           <button onClick={() => void addFunds()} disabled={busy !== null} className="text-brand underline disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
         </div>
         {balance !== null && total > 0n && balance < total ? <div className="text-sm text-warn">Not enough balance — tap “Add $20 (demo)” first.</div> : null}
+        {privyEnabled() ? (
+          usingAccount ? (
+            <div className="flex items-center justify-between rounded-lg bg-good-soft px-3 py-2 text-xs text-good">
+              <span>Rewards save to your account{account.label ? ` (${account.label})` : ''}</span>
+              <button onClick={() => void account.logout()} className="underline">Sign out</button>
+            </div>
+          ) : (
+            <button onClick={account.login} disabled={!account.ready} className="w-full rounded-lg border border-line py-2 text-sm">
+              Sign in to save your rewards <span className="text-muted">— optional</span>
+            </button>
+          )
+        ) : null}
         {error ? <div className="text-sm text-warn">{error}</div> : null}
         <button onClick={() => setShowWallet((v) => !v)} className="w-full text-center text-xs text-muted underline" disabled={total === 0n}>
           {showWallet ? 'Hide' : 'Pay with a crypto wallet instead'}
         </button>
-        {showWallet && total > 0n ? <WalletQr campaign={campaign} amount={total} items={summary} refund={quote.data?.refund ?? '0'} onPaid={(sig) => setReceipt({ amount: total.toString(), refund: quote.data?.refund ?? '0', signature: sig })} /> : null}
+        {showWallet && total > 0n ? <WalletQr campaign={campaign} amount={total} items={summary} refund={quote.data?.refund ?? '0'} onPaid={(sig) => setReceipt({ amount: total.toString(), refund: quote.data?.refund ?? '0', signature: sig, device: false })} /> : null}
       </div>
 
       {receipt ? (
-        <div ref={receiptRef} className="space-y-1 rounded-2xl border border-good bg-card p-4">
-          <div className="text-lg font-bold">Thanks! Paid {formatUsd(receipt.amount)} ✅</div>
+        <div ref={receiptRef} className="space-y-2 rounded-2xl border border-good bg-card p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="text-lg font-bold">Thanks! Paid {formatUsd(receipt.amount)} ✅</div>
+            <div className="text-right">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Order</div>
+              <div className="font-mono text-xl font-bold tracking-wider">#{orderNumber(receipt.signature)}</div>
+            </div>
+          </div>
           {game ? <div className="text-sm">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back — automatically. No need to do anything.</div> : null}
+          <div className="text-xs text-muted">Show this order number at the counter.</div>
+          {receipt.device && privyEnabled() ? (
+            <div className="rounded-lg bg-paper p-2.5 text-xs">
+              This reward is saved on this phone. <button onClick={account.login} className="font-medium text-brand underline">Sign in</button> before your next order to keep rewards on any device.
+            </div>
+          ) : null}
+          {!receipt.device ? <div className="text-xs text-good">Saved to your account — see it on any device.</div> : null}
           <Link href="/me" className="inline-block pt-1 text-sm text-brand underline">See my rewards</Link>
         </div>
       ) : null}

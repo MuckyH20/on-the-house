@@ -1,6 +1,6 @@
 /**
  * QuickNode Streams filter — On the House.
- * Network: solana-devnet · Dataset: programs_with_logs (docs/research/quicknode/data-sources-solana.md)
+ * Network: solana-devnet · Dataset: programs_with_logs (https://www.quicknode.com/docs/streams)
  *
  * Input:  stream.data = one array per block, each holding transaction objects:
  *         { signature, slot, blockTime, programInvocations: [{ programId, instruction }], logs: [...], success }

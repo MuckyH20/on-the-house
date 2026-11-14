@@ -2,12 +2,12 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 import cors from '@fastify/cors';
 import { PublicKey } from '@solana/web3.js';
 import { coverageBps, microsToPrice, quoteSale, unhedgedLiability, type EngineEnv } from '@oth/shared';
-import type { CampaignState, CampaignSummary, EngineInfo, MarketSummary, Quote, SimulatedFlags, VenueProof, WalletClaim } from '@oth/shared/api';
+import { practiceFinishMessage, type CampaignState, type CampaignSummary, type EngineInfo, type MarketSummary, type Quote, type SimulatedFlags, type VenueProof, type WalletClaim } from '@oth/shared/api';
 import { claimAta, type CampaignView } from '@oth/shared/program';
 import { z } from 'zod';
 import type { Repo } from './db';
 import { decodeBody, extractTransactions, NonceCache, verifyQuickNode } from './quicknode';
-import { checkShopSave } from './shops';
+import { checkShopSave, MAX_SKEW_MS, verifyEd25519 } from './shops';
 import { attachOrder, setOrderStatus } from './orders';
 import type { Hedger } from './hedger';
 import type { Ingest } from './ingest';
@@ -326,8 +326,9 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     const mock = d.mock;
     const anySimulated = simulated.gemini || simulated.resolution;
     const guard = (req: FastifyRequest<{ Params: { symbol: string } }>, reply: FastifyReply): boolean => {
-      // With real trading on, only practice games can be driven by hand — never a real market.
-      if (!anySimulated && !req.params.symbol.startsWith('SIM-PRACTICE-')) {
+      // With real trading on, these raw admin routes are off unless MOCK_ADMIN_TOKEN is set, and even then only for
+      // practice games — never a real market. Shops end their own practice games via /campaigns/:id/practice-finish.
+      if (!anySimulated && (!req.params.symbol.startsWith('SIM-PRACTICE-') || !env.MOCK_ADMIN_TOKEN)) {
         void reply.code(404).send({ error: 'not found' });
         return false;
       }
@@ -342,6 +343,20 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       const market = mock.setAsk(req.params.symbol, price);
       return { market, simulated: true };
     });
+    /** A shop ends its own practice game early, signed by the promo's merchant wallet. */
+    const FinishBody = z.object({ outcome: z.enum(['yes', 'no']), timestamp: z.number().int(), signature: z.string().min(40).max(120) });
+    app.post('/campaigns/:id/practice-finish', async (req: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const parsed = FinishBody.safeParse(req.body);
+      if (!parsed.success) return reply.code(400).send({ error: 'outcome, timestamp and signature required' });
+      const c = await registry.getOrFetch(req.params.id);
+      if (!c) return notFound(reply, 'campaign');
+      if (!c.marketSymbol.startsWith('SIM-PRACTICE-')) return reply.code(400).send({ error: 'only practice games can be ended early' });
+      if (Math.abs(Date.now() - parsed.data.timestamp) > MAX_SKEW_MS) return reply.code(400).send({ error: 'signature expired — try again' });
+      const msg = practiceFinishMessage(c.merchant, c.address, parsed.data.outcome, parsed.data.timestamp);
+      if (!verifyEd25519(c.merchant, msg, parsed.data.signature)) return reply.code(403).send({ error: 'only the shop that runs this promo can end its game' });
+      const market = mock.resolve(c.marketSymbol, parsed.data.outcome);
+      return { market, simulated: true };
+    });
     app.post('/mock/markets/:symbol/resolve', async (req: FastifyRequest<{ Params: { symbol: string }; Body: { outcome?: unknown } }>, reply) => {
       if (!guard(req, reply)) return;
       const outcome = z.enum(['yes', 'no']).parse(req.body?.outcome);
@@ -351,7 +366,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   }
 
   // ---------------- QuickNode Streams webhook ----------------
-  // Verified per docs/research/quicknode/validating-webhooks.md, then fed into the same idempotent ingest pipeline.
+  // Verified per QuickNode's webhook validation docs, then fed into the same idempotent ingest pipeline.
   const nonces = new NonceCache();
   await app.register(async (scope) => {
     // Keep the exact bytes: the HMAC covers the (decoded) body as sent.

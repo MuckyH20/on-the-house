@@ -7,7 +7,7 @@ import { GeminiSandbox, SandboxOnlyError, toOrderResult, type GeminiOrder } from
 const market = new GeminiPublic('https://api.sandbox.gemini.com');
 const opts = { apiKey: 'account-test', apiSecret: 'secret', market };
 
-test('refuses to be constructed for any non-sandbox host (hard rule)', () => {
+test('refuses to be constructed for any non-sandbox host (safety)', () => {
   for (const baseUrl of ['https://api.gemini.com', 'https://api.gemini.com.evil.example', 'http://localhost:1234']) {
     assert.throws(() => new GeminiSandbox({ ...opts, baseUrl }), SandboxOnlyError);
   }

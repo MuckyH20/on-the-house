@@ -1,4 +1,6 @@
 import 'server-only';
+import { createPrivateKey, sign } from 'node:crypto';
+import bs58 from 'bs58';
 import { Connection, type Keypair, PublicKey } from '@solana/web3.js';
 import { appServerEnvSchema, assertDevnet, parseEnv, wsUrlFor, type AppServerEnv } from '@oth/shared';
 import { loadKeypair } from '@oth/shared/node';
@@ -62,6 +64,12 @@ export function jsonError(e: unknown, headers?: HeadersInit): Response {
   const message = e instanceof Error ? e.message : String(e);
   if (status >= 500) console.error('[api]', message);
   return Response.json({ error: message }, { status, headers });
+}
+
+/** Sign a UTF-8 message as the demo merchant (demo shop only, when Privy isn't configured). base58 ed25519. */
+export function signAsDemoMerchant(merchant: Keypair, message: string): string {
+  const pkcs8 = Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.from(merchant.secretKey.slice(0, 32))]);
+  return bs58.encode(sign(null, Buffer.from(message, 'utf8'), createPrivateKey({ key: pkcs8, format: 'der', type: 'pkcs8' })));
 }
 
 export function parsePubkey(s: unknown, what = 'address'): PublicKey {

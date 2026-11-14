@@ -245,6 +245,11 @@ export function orderStatusMessage(merchant: string, signature: string, status: 
   return `On the House — order ${signature} is ${status}\nwallet: ${merchant}\ntime: ${timestamp}`;
 }
 
+/** What a shop signs to end its own practice game early ("yes" = the team wins). */
+export function practiceFinishMessage(merchant: string, campaign: string, outcome: 'yes' | 'no', timestamp: number): string {
+  return `On the House — end practice game for promo ${campaign}: ${outcome === 'yes' ? 'team wins' : 'team loses'}\nwallet: ${merchant}\ntime: ${timestamp}`;
+}
+
 export interface ApiError {
   error: string;
 }

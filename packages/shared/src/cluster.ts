@@ -25,7 +25,7 @@ export class WrongClusterError extends Error {
 }
 
 /**
- * Hard rule: Solana devnet only. Checks the genesis hash so a mislabeled RPC URL can't point us at mainnet.
+ * Safety: Solana devnet only. Checks the genesis hash so a mislabeled RPC URL can't point us at mainnet.
  * A local validator (localhost) is allowed for tests.
  */
 export async function assertDevnet(connection: Connection): Promise<'devnet' | 'localnet'> {

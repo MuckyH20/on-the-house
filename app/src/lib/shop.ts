@@ -1,7 +1,7 @@
 'use client';
 
 import { premiumBpsFor, priceToMicros, parseUsd } from '@oth/shared';
-import { orderStatusMessage, shopSaveMessage, type MarketSummary, type OrderStatus, type ShopItem, type ShopOrder, type ShopProfile } from '@oth/shared/api';
+import { orderStatusMessage, practiceFinishMessage, shopSaveMessage, type MarketSummary, type OrderStatus, type ShopItem, type ShopOrder, type ShopProfile } from '@oth/shared/api';
 import { engine, getJson } from './client';
 import type { Owner } from './owner';
 
@@ -112,6 +112,17 @@ export async function setOrderStatus(owner: Owner, orderSig: string, status: Ord
   const timestamp = Date.now();
   const signature = await owner.signMessage(orderStatusMessage(owner.address, orderSig, status, timestamp));
   return engine<ShopOrder>(`/orders/${orderSig}/status`, { method: 'PUT', body: JSON.stringify({ status, timestamp, signature }) });
+}
+
+/** End a practice game now (signed by the shop, like order updates). */
+export async function finishPractice(owner: Owner, campaign: string, outcome: 'yes' | 'no'): Promise<void> {
+  if (owner.mode === 'demo' || !owner.signMessage || !owner.address) {
+    await getJson('/api/practice-finish', { method: 'POST', body: JSON.stringify({ campaign, outcome }) });
+    return;
+  }
+  const timestamp = Date.now();
+  const signature = await owner.signMessage(practiceFinishMessage(owner.address, campaign, outcome, timestamp));
+  await engine(`/campaigns/${campaign}/practice-finish`, { method: 'POST', body: JSON.stringify({ outcome, timestamp, signature }) });
 }
 
 /** "7:48 PM" — when a promo stops selling (sales close SALES_CUTOFF minutes before the game's final). */

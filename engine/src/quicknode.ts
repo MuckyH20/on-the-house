@@ -3,7 +3,7 @@ import { gunzipSync } from 'node:zlib';
 
 /**
  * QuickNode Streams webhook support.
- * Docs: docs/research/quicknode/{destinations-webhooks.md, validating-webhooks.md, data-sources-solana.md}.
+ * Docs: https://www.quicknode.com/docs/streams (webhook destinations, validating webhooks, Solana data sources).
  *
  * Every delivery carries X-QN-Nonce, X-QN-Timestamp and X-QN-Signature, where
  *   signature = hex(HMAC-SHA256(securityToken, nonce + timestamp + payload))

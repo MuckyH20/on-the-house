@@ -4,7 +4,7 @@ import { buildPartiallySignedTx, campaignRefs, fetchCampaign, purchaseIx } from 
 import { engineFetch, HttpError, jsonError, parsePubkey, serverCtx } from '@/lib/server';
 
 /**
- * Solana Pay transaction request (docs/research/solana-pay/NOTES.md), used by both the in-browser burner wallet
+ * Solana Pay transaction request (https://docs.solanapay.com/spec), used by both the in-browser burner wallet
  * and wallets scanning the QR code:
  *   GET  → { label, icon }
  *   POST { account } → { transaction: base64, message }

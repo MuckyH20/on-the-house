@@ -8,7 +8,7 @@ import { Badge, Button, ButtonLink, CampaignStatus, EmptyState, Eyebrow, Notice,
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { useOwner } from '@/lib/owner';
-import { cents, offerText } from '@/lib/shop';
+import { cents, finishPractice, offerText } from '@/lib/shop';
 import { useState } from 'react';
 
 function statusLine(s: CampaignSummary): { tone: 'live' | 'warn' | 'good' | 'muted'; text: string } {
@@ -140,7 +140,7 @@ function PromoCard({ s }: { s: CampaignSummary }) {
         <Stat label="Promo cost" value={formatUsd(cents(c.totalPremium))} />
       </div>
       {!finished && sellsUntil ? <div className="text-xs text-muted">Selling until {sellsUntil}</div> : null}
-      {c.marketSymbol.startsWith('SIM-PRACTICE-') && c.status !== 'settled' ? <PracticeFinish symbol={c.marketSymbol} team={game?.team ?? 'Team'} /> : null}
+      {c.marketSymbol.startsWith('SIM-PRACTICE-') && c.status !== 'settled' ? <PracticeFinish campaign={c.address} team={game?.team ?? 'Team'} /> : null}
       <div className="mt-auto space-y-2">
         {c.status !== 'cancelled' && c.purchaseCount > 0 ? <ButtonLink href={`/orders/${c.address}`} variant="dark" block>Orders</ButtonLink> : null}
         <div className="flex gap-2">
@@ -154,13 +154,14 @@ function PromoCard({ s }: { s: CampaignSummary }) {
 }
 
 /** Practice games only: end the game now to show what happens (a real game ends on its own at the final). */
-function PracticeFinish({ symbol, team }: { symbol: string; team: string }) {
+function PracticeFinish({ campaign, team }: { campaign: string; team: string }) {
+  const owner = useOwner();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const finish = async (outcome: 'yes' | 'no') => {
     setBusy(true);
     try {
-      await engine(`/mock/markets/${encodeURIComponent(symbol)}/resolve`, { method: 'POST', body: JSON.stringify({ outcome }) });
+      await finishPractice(owner, campaign, outcome);
       setDone(outcome === 'yes' ? `${team} wins — refunds are being paid…` : `${team} loses — you keep every sale.`);
     } catch (e) {
       setDone((e as Error).message);

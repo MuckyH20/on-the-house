@@ -1,5 +1,5 @@
 /**
- * QuickNode Stream for On the House (docs/research/quicknode/rest-api-create-stream.md):
+ * QuickNode Stream for On the House (QuickNode Streams REST API):
  *   network solana-devnet · dataset programs_with_logs · filter engine/quicknode/filter.js (our PROGRAM_ID only)
  *   → webhook ${PUBLIC_ENGINE_URL}/webhooks/quicknode, signed with QUICKNODE_STREAM_SECURITY_TOKEN.
  *

@@ -47,7 +47,7 @@ export function coverageBps(liability: bigint, hedgedContracts: bigint): number 
 }
 
 /**
- * Premium for one sale, per the brief:
+ * Premium for one sale:
  *   premium = amount × refund_bps × ask × (1 + PLATFORM_MARGIN_BPS)
  * with ask = YES price in dollars per $1 contract. Rounded up to the base unit.
  */

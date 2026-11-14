@@ -3,9 +3,9 @@ import type { MarketStatus, MarketSummary } from '@oth/shared/api';
 import type { MarketSource, Resolution } from './types';
 
 /**
- * Read-only Gemini Prediction Markets public data (no auth). Docs: docs/research/gemini/ (OpenAPI spec
+ * Read-only Gemini Prediction Markets public data (no auth). Docs: https://docs.gemini.com/prediction-markets (OpenAPI spec
  * `prediction-markets.yaml`, operations listEvents / getEvent). Samples: engine/fixtures/gemini/.
- * Reading from production is allowed by the brief; this class never places orders.
+ * Read-only market data is public; this class never places orders.
  */
 
 // ---- response types (from the OpenAPI spec, checked against the fixtures) ----

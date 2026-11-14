@@ -8,7 +8,7 @@ const QUOTE_GRACE_MS = 60_000;
 
 /**
  * Gemini Prediction Markets trading client — SANDBOX ONLY.
- * Docs: docs/research/gemini/{authentication-api-key.md, trading-quickstart.md, order-lifecycle.md, prediction-markets.yaml}.
+ * Docs: https://docs.gemini.com/prediction-markets (API key auth, trading quickstart, order lifecycle).
  *
  * Private REST calls (per the API-key auth doc): empty body, `Content-Type: text/plain`, JSON payload
  * `{ request, nonce, ...params }` base64-encoded in `X-GEMINI-PAYLOAD`, signed as

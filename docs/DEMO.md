@@ -27,6 +27,8 @@ something goes wrong. Total time on stage: ~3 minutes, plus waiting for the game
    protection page already have content.
 4. Open these tabs on the laptop:
    - `/dashboard` (My promos), `/orders/<promo>`, `/proof/<promo>`, and the GitHub README.
+   - A terminal with the live feed: `scripts/demo-feed.sh engine.log` — one readable line per QuickNode delivery,
+     Solana event, Gemini hedge, settlement and refund.
 
 ## On stage (3 minutes)
 
@@ -59,4 +61,6 @@ result and payout; if the team won, the judge's phone shows *You got $X back* on
 ## After the demo
 
 - `pnpm stream off` (stops QuickNode billing).
-- `pnpm verify:orders <order id>` if a judge asks to see a hedge matched against Gemini's order history.
+- `pnpm verify:orders <promo or Gemini order id>` if a judge asks for proof: it matches every hedge against Gemini's
+  order history, checks the Solana record stores sha256 of that Gemini order id, and shows Gemini's settlement.
+  Works before and after the game settles.

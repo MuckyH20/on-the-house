@@ -173,6 +173,12 @@ export class GeminiSandbox implements Venue {
     return Array.isArray(r) ? r : r.orders ?? [];
   }
 
+  /** Orders closed within [from, to) (epoch ms) — works for games that have settled, whose symbols Gemini no longer accepts. */
+  async orderHistoryBetween(from: number, to: number): Promise<GeminiOrder[]> {
+    const r = await this.private<GeminiOrder[] | { orders: GeminiOrder[] }>('/v1/prediction-markets/orders/history', { from, to, limit: 1000 });
+    return Array.isArray(r) ? r : r.orders ?? [];
+  }
+
   async orderHistory(symbol?: string): Promise<GeminiOrder[]> {
     const r = await this.private<GeminiOrder[] | { orders: GeminiOrder[] }>('/v1/prediction-markets/orders/history', symbol ? { symbol } : {});
     return Array.isArray(r) ? r : r.orders ?? [];

@@ -7,12 +7,13 @@ import { costBps } from '@/lib/shop';
 const LATTE = 4.5;
 const ASK = 0.25;
 
-/** Example game for the landing page (a monogram, not the team's logo). */
+/** Example game for the landing page. */
 const SPURS: Game = {
   team: 'the Spurs',
   emoji: '🏀',
   mark: 'SA',
   color: '#5f6b73',
+  logo: '/logos/spurs.svg',
   closesAt: null,
   versus: '',
   finalAt: '8 PM',

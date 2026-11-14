@@ -1,10 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Game } from '@/lib/game';
 
-/** Team monogram in the team's color (we draw monograms, not official logos). */
-export function TeamMark({ game, size = 44 }: { game: Pick<Game, 'mark' | 'color' | 'team'>; size?: number }) {
+/** Team mark: the team's logo when one is given (on a white disc), else a monogram in the team's color. */
+export function TeamMark({ game, size = 44 }: { game: Pick<Game, 'mark' | 'color' | 'team' | 'logo'>; size?: number }) {
+  const [broken, setBroken] = useState(false);
+  const img = useRef<HTMLImageElement>(null);
+  // An image can fail before hydration attaches onError; catch that case too.
+  useEffect(() => {
+    if (img.current?.complete && img.current.naturalWidth === 0) setBroken(true);
+  }, [game.logo]);
+  if (game.logo && !broken) {
+    return (
+      <div className="flex shrink-0 items-center justify-center rounded-full bg-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.08)]" style={{ width: size, height: size }}>
+        <img ref={img} src={game.logo} alt="" className="h-[78%] w-[78%] object-contain" onError={() => setBroken(true)} />
+      </div>
+    );
+  }
   return (
     <div
       className="flex shrink-0 items-center justify-center rounded-full font-display font-extrabold text-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)]"

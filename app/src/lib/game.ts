@@ -11,6 +11,8 @@ export interface Game {
   /** Monogram + team color for the team mark (we draw monograms, not official logos). */
   mark: string;
   color: string;
+  /** Optional logo image URL; the monogram is shown if it's missing or fails to load. */
+  logo?: string;
   /** ISO time of the final (for countdowns). */
   closesAt: string | null;
   versus: string;

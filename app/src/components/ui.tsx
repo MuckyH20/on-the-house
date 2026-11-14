@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Coffee, type LucideIcon } from 'lucide-react';
 
 /* Shared UI built on the tokens in app/globals.css. Pages compose these — no one-off styling. */
 
-type Variant = 'primary' | 'secondary' | 'dark' | 'success' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'dark' | 'success' | 'ghost' | 'flood' | 'night';
 type Size = 'sm' | 'md' | 'lg';
 
 function btnClass(variant: Variant = 'primary', size: Size = 'md', block = false, extra = '') {
@@ -57,10 +58,6 @@ export function Card({ children, className = '', hover = false }: { children: Re
   return <div className={`card p-4 sm:p-5 ${hover ? 'card-hover' : ''} ${className}`}>{children}</div>;
 }
 
-export function Eyebrow({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`t-label text-brand ${className}`}>{children}</div>;
-}
-
 export function Field({ label, help, children }: { label: string; help?: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
@@ -75,7 +72,7 @@ export function Stat({ label, value, sub }: { label: string; value: ReactNode; s
   return (
     <div>
       <div className="t-small text-muted">{label}</div>
-      <div className="tabular mt-0.5 text-2xl font-bold tracking-tight">{value}</div>
+      <div className="t-score mt-1 text-[2rem]">{value}</div>
       {sub ? <div className="mt-0.5 text-xs text-subtle">{sub}</div> : null}
     </div>
   );
@@ -131,10 +128,12 @@ export function PageSkeleton({ cards = 2 }: { cards?: number }) {
   );
 }
 
-export function EmptyState({ icon = '☕', title, body, action }: { icon?: string; title: string; body?: ReactNode; action?: ReactNode }) {
+export function EmptyState({ icon: Icon = Coffee, title, body, action }: { icon?: LucideIcon; title: string; body?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-dashed border-line-strong bg-card/60 px-6 py-10 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-2xl" aria-hidden="true">{icon}</div>
+    <div className="rounded-2xl border border-dashed border-line-strong px-6 py-10 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-soft text-brand" aria-hidden="true">
+        <Icon className="h-6 w-6" strokeWidth={2} />
+      </div>
       <div className="t-h3 mt-3">{title}</div>
       {body ? <p className="t-small mx-auto mt-1 max-w-xs text-muted">{body}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}

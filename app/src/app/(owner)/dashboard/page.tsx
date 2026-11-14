@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { formatUsd } from '@oth/shared';
 import type { CampaignSummary } from '@oth/shared/api';
 import { TeamMark } from '@/components/GameCard';
-import { Badge, Button, ButtonLink, CampaignStatus, EmptyState, Eyebrow, Notice, PageSkeleton, Skeleton, Stat } from '@/components/ui';
+import { Megaphone, Plus, Trophy } from 'lucide-react';
+import { Badge, Button, ButtonLink, CampaignStatus, EmptyState, Notice, PageSkeleton, Skeleton, Stat } from '@/components/ui';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { useOwner } from '@/lib/owner';
@@ -62,8 +63,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Dashboard</Eyebrow>
-          <h1 className="t-h1 mt-2">My promos</h1>
+          <h1 className="t-h1">My promos</h1>
           {owner.label ? (
             <div className="mt-1.5 flex items-center gap-3 text-sm text-muted">
               <span>Signed in as {owner.label}</span>
@@ -71,13 +71,13 @@ export default function DashboardPage() {
             </div>
           ) : null}
         </div>
-        <ButtonLink href="/start">+ New promo</ButtonLink>
+        <ButtonLink href="/start"><Plus className="h-4 w-4" aria-hidden="true" /> New promo</ButtonLink>
       </div>
 
       {!list.data ? (
         <div className="grid gap-4 md:grid-cols-2"><Skeleton className="h-56 rounded-2xl" /><Skeleton className="h-56 rounded-2xl" /></div>
       ) : all.length === 0 ? (
-        <EmptyState icon="🏆" title="No promos yet" body="Launch your first “free if your team wins” promo — it takes about two minutes." action={<ButtonLink href="/start">Start your first promo</ButtonLink>} />
+        <EmptyState icon={Trophy} title="No promos yet" body="Launch your first “free if your team wins” promo — it takes about two minutes." action={<ButtonLink href="/start">Start your first promo</ButtonLink>} />
       ) : (
         <>
           <div className="card grid grid-cols-2 gap-6 p-5 sm:grid-cols-4 sm:p-6">
@@ -90,7 +90,7 @@ export default function DashboardPage() {
           <section>
             <h2 className="t-label mb-3 text-subtle">Live now</h2>
             {live.length === 0 ? (
-              <EmptyState icon="📣" title="Nothing live right now" body="Your finished promos are below." action={<ButtonLink href="/start" variant="secondary">Start a promo</ButtonLink>} />
+              <EmptyState icon={Megaphone} title="Nothing live right now" body="Your finished promos are below." action={<ButtonLink href="/start" variant="secondary">Start a promo</ButtonLink>} />
             ) : (
               <div className="grid gap-4 md:grid-cols-2">{live.map((s) => <PromoCard key={s.campaign.address} s={s} />)}</div>
             )}
@@ -134,7 +134,7 @@ function PromoCard({ s }: { s: CampaignSummary }) {
         </div>
       </div>
       <div className={`text-sm font-medium ${tone}`}>{st.text}</div>
-      <div className="grid grid-cols-3 gap-2 rounded-xl bg-paper px-3 py-3 text-center">
+      <div className="grid grid-cols-3 divide-x divide-line border-y border-line py-3 text-center">
         <Stat label="Orders" value={c.purchaseCount} />
         <Stat label="You received" value={formatUsd(cents(BigInt(c.totalSales) - BigInt(c.totalPremium)))} />
         <Stat label="Promo cost" value={formatUsd(cents(c.totalPremium))} />
@@ -169,9 +169,9 @@ function PracticeFinish({ campaign, team }: { campaign: string; team: string }) 
       setBusy(false);
     }
   };
-  if (done) return <Notice tone="good">{done}</Notice>;
+  if (done) return <p className="border-t border-line pt-3 text-sm font-bold text-good">{done}</p>;
   return (
-    <div className="notice notice-caution flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3 text-sm text-caution">
       <span className="flex-1">Practice game — end it now:</span>
       <button disabled={busy} onClick={() => void finish('yes')} className="btn btn-success btn-sm">{team} wins</button>
       <button disabled={busy} onClick={() => void finish('no')} className="btn btn-secondary btn-sm">{team} loses</button>

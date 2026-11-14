@@ -7,8 +7,8 @@ import type { Game } from '@/lib/game';
 export function TeamMark({ game, size = 44 }: { game: Pick<Game, 'mark' | 'color' | 'team'>; size?: number }) {
   return (
     <div
-      className="flex shrink-0 items-center justify-center rounded-full font-bold text-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.15)]"
-      style={{ width: size, height: size, background: game.color, fontSize: size * (game.mark.length > 1 ? 0.36 : 0.48) }}
+      className="flex shrink-0 items-center justify-center rounded-full font-display font-extrabold text-white shadow-[inset_0_-2px_0_rgb(0_0_0/0.18)]"
+      style={{ width: size, height: size, background: game.color, fontSize: size * (game.mark.length > 1 ? 0.42 : 0.56) }}
       aria-hidden="true"
     >
       {game.mark}
@@ -16,8 +16,8 @@ export function TeamMark({ game, size = 44 }: { game: Pick<Game, 'mark' | 'color
   );
 }
 
-/** "Final in 42:13" — ticks every second; "Final" once it's over. */
-export function Countdown({ closesAt, className = '' }: { closesAt: string | null; className?: string }) {
+/** Time left until `closesAt` ("42:13", "1:05:09"), ticking every second; null once it's over. */
+export function useTimeLeft(closesAt: string | null): string | null {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -25,17 +25,24 @@ export function Countdown({ closesAt, className = '' }: { closesAt: string | nul
   }, []);
   if (!closesAt) return null;
   const ms = Date.parse(closesAt) - now;
-  if (ms <= 0) return <span className={className}>Final</span>;
+  if (ms <= 0) return null;
   const h = Math.floor(ms / 3_600_000);
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return <span className={`tabular ${className}`}>Final in {h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`}</span>;
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+/** "Final in 42:13" as text; "Final" once it's over. */
+export function Countdown({ closesAt, className = '' }: { closesAt: string | null; className?: string }) {
+  const left = useTimeLeft(closesAt);
+  if (!closesAt) return null;
+  return <span className={`tabular ${className}`}>{left ? `Final in ${left}` : 'Final'}</span>;
 }
 
 /**
- * Kalshi-style outcome card: the matchup, a live countdown, the market's chance, and what happens if they win / lose.
- * `chance` is the market's YES price (0–1) when known.
+ * The scoreboard strip: matchup, live clock and the market's chance on a night face, then what happens if they
+ * win / lose. `chance` is the market's YES price (0–1) when known.
  */
 export function GameCard({
   game,
@@ -56,44 +63,50 @@ export function GameCard({
   details?: boolean;
 }) {
   const pct = chance !== null && chance !== undefined ? Math.round(chance * 100) : null;
+  const left = useTimeLeft(live ? game.closesAt : null);
   return (
-    <div className="card overflow-hidden">
-      <div className={`flex items-center gap-3 ${compact ? 'px-3 py-2.5' : 'px-4 py-4'}`}>
-        <TeamMark game={game} size={compact ? 36 : 48} />
-        <div className="min-w-0 flex-1">
-          <div className={`line-clamp-2 font-semibold leading-snug tracking-tight ${compact ? 'text-[0.9375rem]' : 'text-lg'}`}>{game.matchup}</div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
-            {live && game.closesAt && Date.parse(game.closesAt) > Date.now() ? (
-              <Countdown closesAt={game.closesAt} className="font-medium text-ink" />
-            ) : game.finalAt ? (
-              <span>Final {game.finalAt}</span>
-            ) : null}
+    <div className="@container overflow-hidden rounded-[var(--radius-card)] border border-line bg-card shadow-[var(--shadow-card)]">
+      <div className={`on-night bg-night-deep text-chalk ${compact ? 'px-3 py-3' : 'px-4 pb-4 pt-4'}`}>
+        <div className="flex items-start gap-3">
+          <TeamMark game={game} size={compact ? 34 : 42} />
+          <div className="min-w-0 flex-1">
+            <div className={`line-clamp-2 font-display font-extrabold uppercase leading-[0.95] ${compact ? 'text-xl' : 'text-[1.375rem] @sm:text-[1.75rem]'}`}>{game.matchup}</div>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              {left ? (
+                <>
+                  <span className="board-label">Final in</span>
+                  <span className="digits text-lg">{left}</span>
+                </>
+              ) : game.finalAt ? (
+                <span className="board-label">Final {game.finalAt}</span>
+              ) : null}
+            </div>
           </div>
+          {pct !== null && !compact ? (
+            <div className="text-right">
+              <div className="digits text-[1.75rem] @sm:text-[2.25rem]">{pct}%</div>
+              <div className="board-label mt-1">chance</div>
+            </div>
+          ) : null}
         </div>
         {pct !== null && !compact ? (
-          <div className="text-right">
-            <div className="tabular text-xl font-bold leading-none tracking-tight">{pct}%</div>
-            <div className="mt-1 text-[11px] text-subtle">chance</div>
+          <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+            <div className="h-full rounded-full bg-floodlight" style={{ width: `${pct}%` }} />
           </div>
         ) : null}
       </div>
       {!compact && details && game.winCondition && game.winCondition !== game.matchup ? (
-        <div className="-mt-1 px-4 pb-3 text-xs text-muted">Wins if {lowerFirst(game.winCondition)}{game.finalAt ? ` at ${game.finalAt}` : ''}</div>
-      ) : null}
-      {pct !== null && !compact ? (
-        <div className="mx-4 mb-3 h-1.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: game.color }} />
-        </div>
+        <div className="border-b border-line px-4 py-2.5 text-sm text-muted">Wins if {lowerFirst(game.winCondition)}{game.finalAt ? ` at ${game.finalAt}` : ''}.</div>
       ) : null}
       {!compact ? (
-        <div className="grid grid-cols-2 gap-px border-t border-line bg-line text-sm">
+        <div className="grid grid-cols-2 divide-x divide-line text-[0.9375rem]">
           <div className="bg-good-soft px-4 py-3">
             <div className="t-label text-good">If {game.team} wins</div>
-            <div className="mt-1 font-semibold text-ink">{offer}</div>
+            <div className="mt-1 font-bold text-ink">{offer}</div>
           </div>
-          <div className="bg-card px-4 py-3">
+          <div className="px-4 py-3">
             <div className="t-label text-subtle">If {game.team} loses</div>
-            <div className="mt-1 font-semibold text-ink">{audience === 'owner' ? 'You keep every sale' : 'Enjoy your order'}</div>
+            <div className="mt-1 font-bold text-ink">{audience === 'owner' ? 'You keep every sale' : 'Enjoy your order'}</div>
           </div>
         </div>
       ) : null}

@@ -1,4 +1,4 @@
-import { ButtonLink, Eyebrow } from '@/components/ui';
+import { ButtonLink } from '@/components/ui';
 
 export const metadata = { title: 'Help — On the House' };
 
@@ -6,7 +6,7 @@ const faqs: [string, React.ReactNode][] = [
   [
     'How does it work?',
     <>
-      You pick a game and an offer, like “your order is free if Bitcoin wins.” Every time a customer orders, we immediately
+      You pick a game and an offer, like “your order is free if the Spurs win.” Every time a customer orders, we immediately
       buy a small “protection” contract on Gemini’s prediction market that pays out if your team wins. If it does, that
       payout refunds your customers. You only ever pay the small, fixed cost shown before you launch.
     </>,
@@ -103,13 +103,12 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-12 pb-6">
       <header className="text-center sm:text-left">
-        <Eyebrow>Help center</Eyebrow>
-        <h1 className="t-h1 mt-3">Everything you need, in one minute.</h1>
+        <h1 className="t-h1">Everything you need, in one minute.</h1>
         <p className="t-body mt-3 text-muted">A quick start, then answers to the questions shop owners ask most.</p>
       </header>
 
       <section className="card p-6 sm:p-8">
-        <h2 className="t-h3">Quickstart</h2>
+        <h2 className="t-h2">Quickstart</h2>
         <ol className="mt-5 space-y-4">
           {[
             ['Sign in', 'with email or Google, then add your shop name and menu.'],
@@ -119,7 +118,7 @@ export default function HelpPage() {
             ['That’s it.', 'If your team wins, customers are refunded automatically.'],
           ].map(([b, rest], i) => (
             <li key={b} className="flex gap-4">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand">{i + 1}</span>
+              <span className="t-score flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-night-deep text-lg text-floodlight">{i + 1}</span>
               <p className="t-body pt-1 text-muted"><b className="text-ink">{b}</b> {rest}</p>
             </li>
           ))}
@@ -132,7 +131,7 @@ export default function HelpPage() {
         <div className="card mt-5 divide-y divide-line overflow-hidden p-0">
           {faqs.map(([q, a]) => (
             <details key={q} className="group">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium transition-colors hover:bg-paper sm:px-6">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-bold transition-colors hover:bg-paper sm:px-6">
                 {q}
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper text-muted transition-transform duration-200 group-open:rotate-45" aria-hidden="true">+</span>
               </summary>

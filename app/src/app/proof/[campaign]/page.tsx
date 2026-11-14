@@ -3,7 +3,8 @@
 import { useParams } from 'next/navigation';
 import { formatBps, formatUsd, microsToPrice } from '@oth/shared';
 import type { CampaignState, StoredEvent } from '@oth/shared/api';
-import { Badge, CampaignStatus, CoverageBar, EmptyState, Eyebrow, PageSkeleton, Simulated } from '@/components/ui';
+import { SearchX } from 'lucide-react';
+import { Badge, CampaignStatus, CoverageBar, EmptyState, PageSkeleton, Simulated } from '@/components/ui';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
 import { short, useEngineStream } from '@/lib/client';
@@ -26,7 +27,7 @@ export default function ProofPage() {
   const { campaign } = useParams<{ campaign: string }>();
   const { data: s, live, error } = useEngineStream<CampaignState>(`/campaigns/${campaign}/stream`, `/campaigns/${campaign}/state`);
 
-  if (!s) return error ? <div className="mx-auto max-w-md pt-10"><EmptyState icon="🔍" title="Can’t load this promo" body={error} /></div> : <PageSkeleton cards={3} />;
+  if (!s) return error ? <div className="mx-auto max-w-md pt-10"><EmptyState icon={SearchX} title="Can’t load this promo" body={error} /></div> : <PageSkeleton cards={3} />;
   const c = s.campaign;
   const game = gameFor(s.market);
   const fully = s.coverageBps >= 10_000;
@@ -35,7 +36,6 @@ export default function ProofPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <header className="space-y-3">
-        <Eyebrow>Public proof</Eyebrow>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="t-h1">Protection details</h1>
           <CampaignStatus status={c.status} outcome={c.outcome} pausedByHedger={s.hedger.pausedByHedger} />
@@ -156,7 +156,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   return (
     <div>
       <div className="t-small text-muted">{label}</div>
-      <div className="tabular mt-0.5 text-2xl font-bold tracking-tight sm:text-3xl">{value}</div>
+      <div className="t-score mt-1 text-[2rem] sm:text-[2.5rem]">{value}</div>
       {sub ? <div className="mt-0.5 text-xs text-subtle">{sub}</div> : null}
     </div>
   );

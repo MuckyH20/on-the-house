@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { formatUsd, parseUsd } from '@oth/shared';
 import type { MarketSummary, ShopItem } from '@oth/shared/api';
 import { GameCard, TeamMark } from '@/components/GameCard';
-import { Badge, Button, ButtonLink, EmptyState, Eyebrow, Field, Notice, PageSkeleton, Simulated, Skeleton, SuccessBurst } from '@/components/ui';
+import { Hourglass, MonitorSmartphone, Pencil, Plus, Printer, Smartphone, Trophy, X } from 'lucide-react';
+import { Badge, Button, ButtonLink, EmptyState, Field, Notice, PageSkeleton, Simulated, Skeleton, SuccessBurst } from '@/components/ui';
 import { Qr } from '@/components/Qr';
 import { engine } from '@/lib/client';
-import { gameFor, startsIn } from '@/lib/game';
+import { customerOffer, gameFor, startsIn, type Game } from '@/lib/game';
 import { useOwner } from '@/lib/owner';
 import {
   cents,
@@ -58,9 +59,16 @@ export default function StartPage() {
   if (owner.mode === 'privy' && !owner.authenticated) {
     return (
       <Shell step={1}>
-        <Eyebrow>Step 1 of 3</Eyebrow>
-        <h1 className="t-h1 mt-2">Start your promo</h1>
-        <p className="t-body mt-2 text-muted">Sign in to set up your shop. No crypto, no passwords — just your email or Google.</p>
+        <h1 className="t-h1">Start your promo</h1>
+        <p className="t-body mt-2 text-muted">Three quick steps, about two minutes. No crypto, no passwords: just your email or Google.</p>
+        <ol className="mt-5 space-y-2.5">
+          {STEP_NAMES.map((n, i) => (
+            <li key={n} className="flex items-center gap-3 text-[0.9375rem]">
+              <span className="t-score flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-night-deep text-base text-floodlight">{i + 1}</span>
+              <span><b>{n}</b> <span className="text-muted">{STEP_HINTS[i]}</span></span>
+            </li>
+          ))}
+        </ol>
         <Button onClick={owner.login} variant="secondary" size="lg" block className="mt-7">
           <GoogleG /> Continue with Google or email
         </Button>
@@ -71,16 +79,16 @@ export default function StartPage() {
 
   if (step === 'shop') {
     return (
-      <Shell step={1}>
-        <Eyebrow>Step 1 of 3</Eyebrow>
-        <h1 className="t-h1 mt-2">Your shop</h1>
-        <p className="t-body mt-2 text-muted">This is what customers see on your promo page.</p>
+      <Shell step={1} aside={<CustomerPreview shopName={name} items={items} />}>
+        <h1 className="t-h1">Your shop</h1>
+        <p className="t-body mt-2 text-muted">Your name and menu, as customers will see them on your promo page.</p>
         <div className="mt-6">
           <Field label="Shop name">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Bean There Café" className="input" autoFocus />
           </Field>
         </div>
         <MenuEditor items={items} onChange={setItems} />
+        <MobilePreview><CustomerPreview shopName={name} items={items} /></MobilePreview>
         {error ? <Notice tone="error" className="mt-4">{error}</Notice> : null}
         <Button
           size="lg"
@@ -179,7 +187,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
     return (
       <Shell step={2}>
         <EmptyState
-          icon="⏳"
+          icon={Hourglass}
           title="No games open right now"
           body="Live prices on Gemini’s test market come and go — new games usually open within a few minutes. We’ll keep checking."
           action={<Button variant="secondary" onClick={() => void refresh()}>Check again</Button>}
@@ -214,13 +222,16 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
     }
   }
 
+  const preview = <CustomerPreview shopName={shopName} items={items} game={game} offer={customerOffer(pct)} chance={market.yesAsk ? Number(market.yesAsk) : null} />;
   return (
-    <Shell step={2}>
-      <div className="flex items-center justify-between gap-3">
-        <Eyebrow>Step 2 of 3</Eyebrow>
-        <button onClick={onEditShop} className="btn btn-ghost btn-sm -my-2 -mr-2 max-w-[60%] truncate">{shopName || 'Edit shop'} ✎</button>
+    <Shell step={2} aside={preview}>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="t-h1">Your promo</h1>
+        <button onClick={onEditShop} className="btn btn-ghost btn-sm -mr-2 -mt-1 max-w-[55%]">
+          <span className="truncate">{shopName || 'Edit shop'}</span>
+          <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        </button>
       </div>
-      <h1 className="t-h1 mt-2">Your promo</h1>
 
       {isPracticeGame(market) ? (
         <div className="notice notice-caution mt-5">
@@ -286,9 +297,9 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
       <div className={`mt-6 rounded-2xl p-5 ${tooExpensive ? 'bg-warn-soft' : 'bg-brand-soft'}`}>
         <div className="t-label text-brand-strong">Your cost</div>
         <div className="mt-1.5 text-[0.9375rem] leading-relaxed">
-          You pay <b className="tabular text-2xl font-extrabold tracking-tight">{cost !== null ? `${(cost / 100).toFixed(cost % 100 ? 1 : 0)}%` : '—'}</b> of each sale
+          You pay <b className="t-score text-[2rem]">{cost !== null ? `${(cost / 100).toFixed(cost % 100 ? 1 : 0)}%` : '—'}</b> of each sale
           {costOnTypical !== null && typical ? (
-            <> — that’s <b className="tabular">{formatUsd(cents(costOnTypical))}</b> on a {formatUsd(typical.price)} {typical.name.toLowerCase()}</>
+            <> — that’s <b>{formatUsd(cents(costOnTypical))}</b> on a {formatUsd(typical.price)} {typical.name.toLowerCase()}</>
           ) : null}
           .
         </div>
@@ -318,9 +329,15 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
         </div>
       </details>
 
+      <MobilePreview>{preview}</MobilePreview>
       {error ? <Notice tone="error" className="mt-4">{error}</Notice> : null}
       <Button onClick={() => void launch()} disabled={tooExpensive || cost === null} loading={busy} size="lg" block className="mt-6">
-        {busy ? 'Launching…' : 'Launch promo'}
+        {busy ? 'Launching…' : (
+          <>
+            Launch promo
+            {cost !== null ? <span className="font-normal opacity-80">· {(cost / 100).toFixed(cost % 100 ? 1 : 0)}% per sale</span> : null}
+          </>
+        )}
       </Button>
       {market.simulated || isPracticeGame(market) ? <div className="mt-3 text-center"><Simulated label="SIMULATED · practice game" /></div> : null}
     </Shell>
@@ -357,34 +374,29 @@ function LiveStep({ campaign, shopName }: { campaign: string; shopName: string }
           {copied ? 'Copied ✓' : 'Copy'}
         </Button>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        {canShare ? (
-          <Button variant="secondary" onClick={() => void navigator.share({ title: shopName, text: `Game-day promo at ${shopName}`, url: link }).catch(() => {})}>
-            Share…
-          </Button>
-        ) : null}
-        <ButtonLink href={`/p/${campaign}/print`} target="_blank" variant="secondary" className={canShare ? '' : 'col-span-2'}>
-          Print counter sign
-        </ButtonLink>
-      </div>
-      <div className="card mt-6 p-5">
-        <div className="t-h3">What happens next</div>
-        <ol className="mt-3 space-y-3 text-sm text-muted">
-          {[
-            ['Put the sign on your counter', '(or share the link).'],
-            ['Customers scan, order and pay', 'on their phone — they get an order number.'],
-            ['Keep the Orders screen open', 'and hand over each order by its number.'],
-            ['After the final,', 'refunds (if any) are paid automatically. Nothing for you to do.'],
-          ].map(([b, rest], i) => (
-            <li key={b} className="flex gap-3">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-bold text-brand">{i + 1}</span>
-              <span className="pt-0.5"><b className="text-ink">{b}</b> {rest}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <ButtonLink href={`/orders/${campaign}`} variant="dark" size="lg" block className="mt-5">Open the Orders screen</ButtonLink>
-      <ButtonLink href={`/p/${campaign}`} variant="secondary" block className="mt-3">See what customers see</ButtonLink>
+      {canShare ? (
+        <Button variant="secondary" block className="mt-3" onClick={() => void navigator.share({ title: shopName, text: `Game-day promo at ${shopName}`, url: link }).catch(() => {})}>
+          Share the link…
+        </Button>
+      ) : null}
+      <h2 className="t-h2 mt-8">Get ready for game night</h2>
+      <ol className="mt-4 divide-y divide-line border-y border-line">
+        {[
+          { icon: Printer, title: 'Put the sign on your counter', body: 'Or share the link. Customers scan, order and pay on their phone.', action: <ButtonLink href={`/p/${campaign}/print`} target="_blank" variant="secondary" size="sm">Print sign</ButtonLink> },
+          { icon: MonitorSmartphone, title: 'Open Orders on your counter device', body: 'Each order shows up with a number. Hand it over, tap ready.', action: <ButtonLink href={`/orders/${campaign}`} variant="dark" size="sm">Open the Orders screen</ButtonLink> },
+          { icon: Smartphone, title: 'Try a test order', body: 'See exactly what your customers see.', action: <ButtonLink href={`/p/${campaign}`} variant="secondary" size="sm">See what customers see</ButtonLink> },
+          { icon: Trophy, title: 'After the final, nothing to do', body: 'If your team wins, refunds are paid automatically, by us.' },
+        ].map(({ icon: Icon, title, body, action }) => (
+          <li key={title} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
+            <Icon className="h-5 w-5 shrink-0 text-brand" aria-hidden="true" />
+            <div className="min-w-0 flex-1 basis-48">
+              <div className="font-bold">{title}</div>
+              <p className="t-small text-muted">{body}</p>
+            </div>
+            {action ?? null}
+          </li>
+        ))}
+      </ol>
       <div className="mt-4 text-center"><Link href="/dashboard" className="link-muted text-sm">Go to my promos</Link></div>
     </Shell>
   );
@@ -397,8 +409,18 @@ function MenuEditor({ items, onChange }: { items: ShopItem[]; onChange: (i: Shop
     onChange(items.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
   return (
     <div className="mt-6">
-      <div className="field-label">Menu</div>
-      <div className="space-y-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div className="field-label mb-0">Menu</div>
+        <div className="flex flex-wrap items-center gap-1.5 text-sm" role="group" aria-label="Start from a menu">
+          <span className="text-muted">Start from:</span>
+          {Object.keys(MENU_PRESETS).map((k) => (
+            <button key={k} type="button" onClick={() => onChange(MENU_PRESETS[k]!.map((it, i) => ({ ...it, id: `${k.toLowerCase()}-${i}-${Date.now()}` })))} className="rounded-full border border-line-strong px-2.5 py-1 font-bold transition-colors hover:border-brand hover:text-brand">
+              {k}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="mt-2.5 space-y-2">
         {items.map((it, i) => (
           <div key={it.id} className="flex items-center gap-2">
             <input
@@ -409,17 +431,17 @@ function MenuEditor({ items, onChange }: { items: ShopItem[]; onChange: (i: Shop
               className="input min-w-0 flex-1"
             />
             <PriceInput price={it.price} label={`${it.name} price`} onPrice={(price) => update(i, { price })} />
-            <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="btn btn-ghost h-12 w-10 px-0 text-xl" aria-label={`Remove ${it.name}`}>
-              ×
+            <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="btn btn-ghost h-12 w-10 px-0" aria-label={`Remove ${it.name}`}>
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         ))}
       </div>
       <button
         onClick={() => onChange([...items, { id: `item-${Date.now()}`, name: '', price: '3000000' }])}
-        className="link mt-3 text-sm"
+        className="link mt-3 inline-flex items-center gap-1 text-sm"
       >
-        + Add item
+        <Plus className="h-4 w-4" aria-hidden="true" /> Add item
       </button>
     </div>
   );
@@ -443,25 +465,112 @@ function PriceInput({ price, label, onPrice }: { price: string; label: string; o
             /* partial input like "4." — keep typing */
           }
         }}
-        className="tabular w-full bg-transparent text-right outline-none"
+        className="w-full bg-transparent text-right outline-none"
         aria-label={label}
       />
     </div>
   );
 }
 
-function Shell({ step, children }: { step: 1 | 2 | 3; children: React.ReactNode }) {
+const STEP_NAMES = ['Your shop', 'Game & offer', 'You’re live'];
+const STEP_HINTS = ['name and menu', 'we suggest one, you see the cost', 'a QR sign for your counter'];
+
+function Shell({ step, children, aside }: { step: 1 | 2 | 3; children: ReactNode; aside?: ReactNode }) {
   return (
-    <div className="mx-auto max-w-[480px] pb-6">
-      <div className="mb-6 flex items-center gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} aria-label={`Step ${step} of 3`}>
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="step-dot" data-on={s <= step} />
-        ))}
+    <div className={`mx-auto pb-6 ${aside ? 'max-w-5xl' : 'max-w-[480px]'}`}>
+      <div className={`mb-6 ${aside ? 'max-w-[480px] lg:max-w-none' : ''}`}>
+        <div className="flex items-center gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} aria-label={`Step ${step} of 3: ${STEP_NAMES[step - 1]}`}>
+          {[1, 2, 3].map((s) => (
+            <div key={s} className="step-dot" data-on={s <= step} />
+          ))}
+        </div>
+        <div className="mt-2 flex justify-between text-xs font-bold" aria-hidden="true">
+          {STEP_NAMES.map((n, i) => (
+            <span key={n} className={i + 1 === step ? 'text-ink' : 'text-subtle'}>{n}</span>
+          ))}
+        </div>
       </div>
-      <div className="card animate-fade-up p-6 sm:p-8">{children}</div>
+      <div className={aside ? 'grid items-start gap-10 lg:grid-cols-[480px_1fr]' : ''}>
+        <div className="animate-fade-up">{children}</div>
+        {aside ? (
+          <aside className="sticky top-24 hidden lg:block" aria-label="Preview of your promo page">
+            <p className="mb-3 text-sm font-bold text-muted">What customers see</p>
+            {aside}
+          </aside>
+        ) : null}
+      </div>
     </div>
   );
 }
+
+/** Collapsible preview for phones (the desktop shows it beside the form). */
+function MobilePreview({ children }: { children: ReactNode }) {
+  return (
+    <details className="group mt-5 lg:hidden">
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl bg-paper px-4 py-3 text-sm font-bold">
+        Preview what customers see
+        <span className="text-muted transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+      </summary>
+      <div className="mt-3">{children}</div>
+    </details>
+  );
+}
+
+/** A live, simplified copy of the customer promo page: updates as the owner types and picks. */
+function CustomerPreview({ shopName, items, game, offer, chance }: { shopName: string; items: ShopItem[]; game?: Game | null; offer?: string; chance?: number | null }) {
+  return (
+    <div className="rounded-[28px] bg-night-deep p-2.5" aria-hidden="true">
+      <div className="space-y-3 rounded-[20px] bg-paper px-4 pb-5 pt-5">
+        <div className="text-center">
+          <div className="font-display text-[1.75rem] font-extrabold uppercase leading-none">{shopName.trim() || 'Your shop'}</div>
+          <div className="mt-1 text-xs font-bold text-brand">Game-day promo</div>
+        </div>
+        {game && offer ? (
+          <GameCard game={game} offer={offer} audience="customer" chance={chance ?? null} details={false} />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-line-strong px-4 py-5 text-center text-sm text-muted">Next: pick the game your offer rides on.</div>
+        )}
+        <ul className="divide-y divide-line rounded-2xl bg-card px-4">
+          {(items.length ? items : [{ id: 'x', name: 'Your first item', price: '0' }]).slice(0, 5).map((it) => (
+            <li key={it.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+              <span className="truncate font-bold">{it.name || 'Item'}</span>
+              <span className="text-muted">{formatUsd(it.price)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="btn btn-primary btn-block pointer-events-none">Pay</div>
+      </div>
+    </div>
+  );
+}
+
+const usd = (n: number) => String(Math.round(n * 1_000_000));
+const MENU_PRESETS: Record<string, Omit<ShopItem, 'id'>[]> = {
+  Café: [
+    { name: 'Drip coffee', price: usd(3) },
+    { name: 'Oat latte', price: usd(4.5) },
+    { name: 'Cold brew', price: usd(4.25) },
+    { name: 'Blueberry muffin', price: usd(3.25) },
+  ],
+  Bar: [
+    { name: 'Draft beer', price: usd(7) },
+    { name: 'House wine', price: usd(9) },
+    { name: 'Cocktail', price: usd(12) },
+    { name: 'Wings', price: usd(13) },
+  ],
+  Pizza: [
+    { name: 'Slice', price: usd(4.5) },
+    { name: 'Whole pie', price: usd(18) },
+    { name: 'Garlic knots', price: usd(6) },
+    { name: 'Soda', price: usd(2.5) },
+  ],
+  Bakery: [
+    { name: 'Croissant', price: usd(3.75) },
+    { name: 'Cinnamon roll', price: usd(4.25) },
+    { name: 'Sourdough loaf', price: usd(8) },
+    { name: 'Coffee', price: usd(3) },
+  ],
+};
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <div className="py-20 text-center text-muted">{children}</div>;

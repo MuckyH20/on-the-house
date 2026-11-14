@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { formatUsd } from '@oth/shared';
 import type { WalletClaim } from '@oth/shared/api';
-import { Button, Card, EmptyState, Eyebrow, Pill, Simulated, Skeleton } from '@/components/ui';
+import { Ticket, Trophy } from 'lucide-react';
+import { Button, Card, EmptyState, Pill, Simulated, Skeleton } from '@/components/ui';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
@@ -36,8 +37,8 @@ export default function MePage() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       <header>
-        <Eyebrow>Your game-day orders</Eyebrow>
-        <h1 className="t-h1 mt-2">My rewards</h1>
+        <h1 className="t-h1">My rewards</h1>
+        <p className="t-small mt-2 text-muted">Your game-day orders, and what came back.</p>
       </header>
       {privyEnabled() ? (
         account.authenticated ? (
@@ -52,9 +53,12 @@ export default function MePage() {
         )
       ) : null}
       {totalBack > 0n ? (
-        <div className="card animate-pop bg-good-soft p-6 text-center ring-1 ring-good/30">
-          <div className="text-4xl" aria-hidden="true">🎉</div>
-          <div className="t-h2 mt-2 text-good">You got {formatUsd(totalBack)} back!</div>
+        <div className="board on-night animate-pop p-6 text-center">
+          <Trophy className="mx-auto h-8 w-8 text-floodlight" aria-hidden="true" />
+          <p className="board-label mt-3">Your team won</p>
+          <p className="mt-2 font-display text-3xl font-extrabold uppercase leading-none">
+            You got <span className="digits text-[2.75rem]">{formatUsd(totalBack)}</span> back
+          </p>
         </div>
       ) : null}
       {pending > 0n ? <div className="notice notice-info">Waiting on games: up to <b>{formatUsd(pending)}</b> could come back to you.</div> : null}
@@ -76,7 +80,7 @@ export default function MePage() {
                 <Pill tone="brand">Game on</Pill>
               )}
             </div>
-            <div className="tabular text-sm">
+            <div className="text-sm">
               You spent {formatUsd(spent)} · {c.status === 'settled' && c.outcome === 'yes' ? <>you got <b>{formatUsd(c.paidOut)}</b> back</> : <>you’d get {formatUsd(promised)} back</>}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -96,7 +100,7 @@ export default function MePage() {
         );
       })}
       {!claims.data && wallet ? <><Skeleton className="h-36 w-full rounded-2xl" /><Skeleton className="h-36 w-full rounded-2xl" /></> : null}
-      {claims.data && list.length === 0 ? <EmptyState icon="🎟️" title="No game-day orders yet" body="Order from a shop’s promo page and your rewards will show up here." /> : null}
+      {claims.data && list.length === 0 ? <EmptyState icon={Ticket} title="No game-day orders yet" body="Order from a shop’s promo page and your rewards will show up here." /> : null}
       {wallet ? <div className="pt-2 text-center text-xs text-subtle">Your rewards are saved on this device ({short(wallet, 4)}).</div> : null}
     </div>
   );

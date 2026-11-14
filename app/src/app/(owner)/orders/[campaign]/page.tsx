@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { formatUsd } from '@oth/shared';
 import type { CampaignState, OrderStatus, ShopOrder } from '@oth/shared/api';
 import { TeamMark } from '@/components/GameCard';
-import { Badge, Button, ButtonLink, EmptyState, Eyebrow, Notice, Skeleton } from '@/components/ui';
+import { CheckCheck, ReceiptText } from 'lucide-react';
+import { Badge, Button, ButtonLink, EmptyState, Notice, Skeleton } from '@/components/ui';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
@@ -62,8 +63,7 @@ export default function OrdersPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <Eyebrow>Counter</Eyebrow>
-          <h1 className="t-h1 mt-2">Orders</h1>
+          <h1 className="t-h1">Orders</h1>
           {game ? (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted">
               <TeamMark game={game} size={22} />
@@ -91,22 +91,25 @@ export default function OrdersPage() {
       {!orders.data ? (
         <div className="grid gap-4 sm:grid-cols-2"><Skeleton className="h-48 rounded-2xl" /><Skeleton className="h-48 rounded-2xl" /></div>
       ) : shown.length === 0 ? (
-        <EmptyState icon={tab === 'new' ? '🧾' : '✓'} title={tab === 'new' ? 'No orders waiting' : 'Nothing here yet'} body={tab === 'new' ? 'New orders appear here the moment a customer pays.' : undefined} />
+        <EmptyState icon={tab === 'new' ? ReceiptText : CheckCheck} title={tab === 'new' ? 'No orders waiting' : 'Nothing here yet'} body={tab === 'new' ? 'New orders appear here the moment a customer pays.' : undefined} />
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {shown.map((o) => (
-          <div key={o.signature} className={`card animate-fade-up flex flex-col gap-4 p-5 ${o.status === 'new' ? 'ring-2 ring-brand/70' : ''}`}>
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="font-mono text-3xl font-bold tracking-wider">#{orderNumber(o.signature)}</span>
-              <span className="text-sm text-subtle">{new Date(o.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+          <div key={o.signature} className={`ticket animate-fade-up flex flex-col ${o.status === 'new' ? 'ring-2 ring-brand' : ''}`}>
+            <div className="flex flex-1 flex-col gap-3 p-5">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="t-score text-[2.75rem] tracking-wide">#{orderNumber(o.signature)}</span>
+                <span className="text-sm text-subtle">{new Date(o.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+              </div>
+              <ul className="space-y-1.5 text-lg">
+                {o.lines.map((l) => (
+                  <li key={l.id} className="flex gap-2"><span className="tabular font-bold text-brand">{l.qty}×</span> {l.name}</li>
+                ))}
+              </ul>
             </div>
-            <ul className="space-y-1.5 text-lg">
-              {o.lines.map((l) => (
-                <li key={l.id} className="flex gap-2"><span className="tabular font-bold text-brand">{l.qty}×</span> {l.name}</li>
-              ))}
-            </ul>
-            <div className="flex items-center justify-between gap-2 border-t border-line pt-3 text-sm">
+            <div className="ticket-tear flex flex-col gap-3 p-5 pt-4">
+            <div className="flex items-center justify-between gap-2 text-sm">
               <Badge tone="win">Paid {formatUsd(o.amount)}</Badge>
               <span className="text-right text-muted">{Number(o.refund) > 0 && game ? `${formatUsd(o.refund)} back if ${game.team} wins` : ''}</span>
             </div>
@@ -117,6 +120,7 @@ export default function OrdersPage() {
             ) : (
               <Button loading={busy === o.signature} onClick={() => void move(o, 'ready')} variant="secondary" size="sm" block>Undo</Button>
             )}
+            </div>
           </div>
         ))}
       </div>

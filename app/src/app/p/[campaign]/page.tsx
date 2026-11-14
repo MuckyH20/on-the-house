@@ -8,6 +8,7 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 import { formatUsd } from '@oth/shared';
 import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
 import { GameCard } from '@/components/GameCard';
+import { Minus, Plus, SearchX } from 'lucide-react';
 import { Button, EmptyState, Notice, PageSkeleton, Simulated, Spinner } from '@/components/ui';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
 import { customerOffer, gameFor } from '@/lib/game';
@@ -133,7 +134,7 @@ export default function PromoPage() {
   if (state.error && !state.data)
     return (
       <div className="mx-auto max-w-md pt-10">
-        <EmptyState icon="🔍" title="This promo couldn’t be found" body="Check the link or ask the shop for a new one." />
+        <EmptyState icon={SearchX} title="This promo couldn’t be found" body="Check the link or ask the shop for a new one." />
       </div>
     );
   if (!c || !shop) return <PageSkeleton cards={3} />;
@@ -141,8 +142,8 @@ export default function PromoPage() {
   return (
     <div className="mx-auto max-w-md space-y-4 pb-6">
       <header className="pt-2 text-center">
-        <div className="t-label text-brand">Game-day promo</div>
-        <h1 className="t-h1 mt-1.5">{shop.name}</h1>
+        <h1 className="t-h1">{shop.name}</h1>
+        <p className="mt-1.5 text-sm font-bold text-brand">Game-day promo</p>
       </header>
 
       {ended ? (
@@ -167,16 +168,16 @@ export default function PromoPage() {
         {items.map((m) => (
           <div key={m.id} className="flex items-center gap-3 px-4 py-3.5">
             <div className="min-w-0 flex-1">
-              <div className="font-medium">{m.name}</div>
-              <div className="tabular text-sm text-muted">{formatUsd(m.price)}</div>
+              <div className="font-bold">{m.name}</div>
+              <div className="text-sm text-muted">{formatUsd(m.price)}</div>
             </div>
             {cart[m.id] ? (
               <>
-                <button aria-label={`Remove ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: Math.max(0, (x[m.id] ?? 0) - 1) }))} className="btn btn-secondary h-10 w-10 rounded-full p-0 text-lg">−</button>
+                <button aria-label={`Remove ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: Math.max(0, (x[m.id] ?? 0) - 1) }))} className="btn btn-secondary h-10 w-10 rounded-full p-0"><Minus className="h-4 w-4" aria-hidden="true" /></button>
                 <span className="tabular w-5 text-center font-semibold">{cart[m.id]}</span>
               </>
             ) : null}
-            <button aria-label={`Add ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: (x[m.id] ?? 0) + 1 }))} className="btn btn-dark h-10 w-10 rounded-full p-0 text-lg">+</button>
+            <button aria-label={`Add ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: (x[m.id] ?? 0) + 1 }))} className="btn btn-dark h-10 w-10 rounded-full p-0"><Plus className="h-4 w-4" aria-hidden="true" /></button>
           </div>
         ))}
       </div>
@@ -185,7 +186,7 @@ export default function PromoPage() {
       <div className="card space-y-4 p-5">
         <div className="flex items-baseline justify-between">
           <span className="text-muted">Total</span>
-          <span className="tabular text-3xl font-extrabold tracking-tight">{formatUsd(total)}</span>
+          <span className="t-score text-[2.5rem]">{formatUsd(total)}</span>
         </div>
         {total > 0n && quote.data?.refund && !ended && game ? (
           <Notice tone="good">If {game.team} wins, you get <b>{formatUsd(quote.data.refund)}</b> back — automatically.</Notice>
@@ -194,7 +195,7 @@ export default function PromoPage() {
           {busy === 'pay' ? 'Paying…' : `Pay ${total > 0n ? formatUsd(total) : ''}`}
         </Button>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted">Your balance: <span className="tabular font-medium text-ink">{balance === null ? '…' : formatUsd(balance)}</span></span>
+          <span className="text-muted">Your balance: <span className="font-bold text-ink">{balance === null ? '…' : formatUsd(balance)}</span></span>
           <button onClick={() => void addFunds()} disabled={busy !== null} className="link disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
         </div>
         {balance !== null && total > 0n && balance < total ? <Notice tone="caution">Not enough balance — tap “Add $20 (demo)” first.</Notice> : null}
@@ -220,18 +221,19 @@ export default function PromoPage() {
       </div>
 
       {receipt ? (
-        <div ref={receiptRef} className="card animate-fade-up space-y-3 p-5 ring-2 ring-good/60">
-          <div className="flex items-start justify-between gap-3">
+        <div ref={receiptRef} className="ticket animate-fade-up ring-2 ring-good/60">
+          <div className="flex items-start justify-between gap-3 p-5">
             <div>
-              <div className="t-label text-good">Paid ✓</div>
-              <div className="t-h2 mt-1">Thanks! {formatUsd(receipt.amount)}</div>
+              <p className="t-h2">Thanks!</p>
+              <p className="mt-1 text-sm text-muted">Paid {formatUsd(receipt.amount)} · show this at the counter</p>
             </div>
-            <div className="rounded-xl bg-paper px-3 py-2 text-right">
+            <div className="text-right">
               <div className="t-label text-subtle">Order</div>
-              <div className="font-mono text-2xl font-bold tracking-wider">#{orderNumber(receipt.signature)}</div>
+              <div className="t-score mt-1 text-[2.75rem] tracking-wide">#{orderNumber(receipt.signature)}</div>
             </div>
           </div>
-          {game ? <p className="text-[0.9375rem]">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back — automatically. No need to do anything.</p> : null}
+          <div className="ticket-tear space-y-3 p-5 pt-4">
+          {game ? <p className="text-[0.9375rem]">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back, automatically. No need to do anything.</p> : null}
           <OrderStatusLine signature={receipt.signature} />
           {receipt.device && privyEnabled() ? (
             <div className="rounded-xl bg-paper p-3 text-sm text-muted">
@@ -240,6 +242,7 @@ export default function PromoPage() {
           ) : null}
           {!receipt.device ? <div className="text-sm text-good">Saved to your account — see it on any device.</div> : null}
           <Link href="/me" className="link inline-block text-sm">See my rewards →</Link>
+          </div>
         </div>
       ) : null}
 

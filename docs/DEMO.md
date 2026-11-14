@@ -33,7 +33,7 @@ something goes wrong. Total time on stage: ~3 minutes, plus waiting for the game
 | Time | Show | Say |
 |---|---|---|
 | 0:00 | Landing page | "Shops love ‘free if your team wins’ promos — but if the team wins, they owe everyone a refund. On the House makes that a small, fixed cost." |
-| 0:20 | `/start` → the pre-picked game, the cost line | "I sign in with Google — no wallet, no seed phrase. It suggests the next game and shows exactly what this costs me: 26% of each sale, $1.17 on a latte, win or lose." |
+| 0:20 | `/start` → the pre-picked game, the cost line | "I sign in with Google — no wallet, no seed phrase. It suggests the next game and shows exactly what this costs me: 27.5% of each sale, $1.24 on a latte, win or lose." |
 | 0:45 | Launch → *You're live* (QR) | "One tap. I get a link and a QR for my counter." |
 | 1:00 | Judge scans the QR on their phone, adds demo dollars, orders, pays | "Customers just scan and pay — no app, no account. The receipt says what they get back." |
 | 1:30 | Orders screen: the judge's order appears; tap **Mark ready** | "My staff see it instantly, like any order-ahead ticket." (Judge's phone flips to *Ready for pickup ✓*.) |

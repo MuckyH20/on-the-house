@@ -13,6 +13,20 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DEFAULT_TICK = 10_000n;
 /** Gemini accepts event-contract prices from $0.01 to $0.99 (a $1.00 limit is rejected with 422 Invalid price). */
 export const VENUE_MAX_PRICE_MICROS = 990_000n;
+/**
+ * Gemini also rejects a buy limit set far above the current ask, with the same "Invalid price… between $0.01 and
+ * $0.99" message even for $0.90 (in the sandbox about $0.18 above the ask is the edge). Orders are
+ * immediate-or-cancel and fill at the best ask anyway, so cap the limit at ask + LIMIT_BAND, never above the shop's max.
+ */
+export const LIMIT_BAND_MICROS = 150_000n;
+
+/** The limit for one hedge order: the shop's max price, tightened to ask + band when the ask is known. */
+export function hedgeLimit(maxLimit: bigint, askMicros: bigint | null, tick: bigint): bigint {
+  if (askMicros === null) return maxLimit;
+  const t = tick > 0n ? tick : DEFAULT_TICK;
+  const near = ((askMicros + LIMIT_BAND_MICROS) / t) * t;
+  return near < maxLimit ? near : maxLimit;
+}
 
 /**
  * Keeps each campaign's hedged contracts ≥ ceil(liability / $1):
@@ -110,11 +124,18 @@ export class Hedger {
     }
 
     const quote = await this.venue.quote(c.marketSymbol);
-    const limit = this.maxPriceMicros(c, quote.tickMicros || DEFAULT_TICK);
+    const tick = quote.tickMicros || DEFAULT_TICK;
+    const maxLimit = this.maxPriceMicros(c, tick);
+    let limit = hedgeLimit(maxLimit, quote.askMicros, tick);
     this.setState(campaign, 'hedging');
     let remaining = need;
     let lastReason = '';
     for (let attempt = 1; attempt <= this.env.HEDGE_MAX_ATTEMPTS && remaining > 0; attempt++) {
+      if (attempt > 1) {
+        // Re-price each retry from a fresh quote (the ask may have moved).
+        const q = await this.venue.quote(c.marketSymbol).catch(() => null);
+        limit = hedgeLimit(maxLimit, q?.askMicros ?? null, tick);
+      }
       const clientOrderId = `oth-${campaign.slice(0, 8)}-${Date.now()}-${attempt}`;
       const res = await this.venue.buyYes({ symbol: c.marketSymbol, contracts: remaining, limitPriceMicros: limit, clientOrderId });
       this.log.info({ campaign, attempt, contracts: remaining, limit: limit.toString(), res: { ...res, avgPriceMicros: res.avgPriceMicros.toString() } }, 'hedge order');
@@ -151,7 +172,7 @@ export class Hedger {
     if (remaining > 0) {
       this.log.warn({ campaign, remaining, reason: lastReason }, 'could not hedge under the max price — pausing sales');
       await this.pauseForHedge(c);
-      this.setState(campaign, 'failed', `Couldn't buy coverage under $${(Number(limit) / 1e6).toFixed(2)}: ${lastReason}`);
+      this.setState(campaign, 'failed', `Couldn't buy coverage under $${(Number(maxLimit) / 1e6).toFixed(2)}: ${lastReason}`);
       return;
     }
     const fresh = await this.registry.refresh(campaign);

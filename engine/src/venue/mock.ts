@@ -13,6 +13,27 @@ const PRACTICE_TEAMS: [string, string, bigint][] = [
 ];
 const SPREAD = 20_000n; // bid = ask − $0.02
 
+/**
+ * Rebuild a practice game from its symbol (SIM-PRACTICE-<TEAM>-<YYYYMMDDHHMM>[-n]) so promos on it keep their
+ * title and final time after an engine restart. Returns null for anything else.
+ */
+export function practiceFromSymbol(symbol: string): MockMarket | null {
+  const m = /^SIM-PRACTICE-([A-Z]+)-(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(?:-\d+)?$/.exec(symbol);
+  const team = m && PRACTICE_TEAMS.find(([t]) => t === m[1]);
+  if (!m || !team) return null;
+  const closesAt = new Date(Date.UTC(+m[2]!, +m[3]! - 1, +m[4]!, +m[5]!, +m[6]!)).toISOString();
+  return {
+    symbol,
+    title: `${team[0]} price today — Up`,
+    condition: `${team[1]} finishes up (practice game)`,
+    category: 'practice',
+    askMicros: team[2],
+    closesAt,
+    outcome: null,
+    adHoc: true,
+  };
+}
+
 interface MockMarket {
   symbol: string;
   title: string;
@@ -48,6 +69,8 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
 
   private market(symbol: string): MockMarket {
     let m = this.markets.get(symbol);
+    if (!m) m = practiceFromSymbol(symbol) ?? undefined;
+    if (m) this.markets.set(symbol, m);
     if (!m) {
       m = {
         symbol,
@@ -115,13 +138,23 @@ export class MockGemini extends EventEmitter implements Venue, MarketSource {
     return [...this.markets.values()].filter((m) => !m.adHoc).map(toSummary);
   }
 
+  /** A known market, or a practice game rebuilt from its symbol (after a restart). Never creates other symbols. */
+  private known(symbol: string): MockMarket | undefined {
+    let m = this.markets.get(symbol);
+    if (!m) {
+      m = practiceFromSymbol(symbol) ?? undefined;
+      if (m) this.markets.set(symbol, m);
+    }
+    return m;
+  }
+
   async getMarket(symbol: string): Promise<MarketSummary | null> {
-    const m = this.markets.get(symbol);
+    const m = this.known(symbol);
     return m ? toSummary(m) : null;
   }
 
   async resolution(symbol: string): Promise<Resolution> {
-    const m = this.markets.get(symbol);
+    const m = this.known(symbol);
     // Practice games settle themselves a minute after the final, weighted by their price (unless an admin already did).
     if (m && !m.outcome && isPractice(m.symbol) && m.closesAt && Date.now() >= Date.parse(m.closesAt) + 60_000) {
       this.resolve(m.symbol, Math.random() * 1_000_000 < Number(m.askMicros) ? 'yes' : 'no');

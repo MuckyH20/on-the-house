@@ -1,8 +1,8 @@
 import 'server-only';
 import { createAssociatedTokenAccountIdempotentInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
-import { PublicKey, sendAndConfirmTransaction, Transaction } from '@solana/web3.js';
+import { PublicKey, Transaction } from '@solana/web3.js';
 import { z } from 'zod';
-import { MAX_MARKET_SYMBOL_LEN, parseUsd } from '@oth/shared';
+import { MAX_MARKET_SYMBOL_LEN, parseUsd, sendAndConfirm } from '@oth/shared';
 import { buildPartiallySignedTx, createCampaignIx } from '@oth/shared/program';
 import { engineFetch, HttpError, serverCtx } from './server';
 
@@ -67,7 +67,7 @@ export async function launch(b: LaunchInput): Promise<{ campaign: string; deadli
   const ixs = [createAssociatedTokenAccountIdempotentInstruction(operator.publicKey, merchantUsdc, merchant, usdcMint), ix];
 
   if (merchant.equals(demoMerchant.publicKey)) {
-    const signature = await sendAndConfirmTransaction(connection, new Transaction().add(...ixs), [operator, demoMerchant], { commitment: 'confirmed' });
+    const signature = await sendAndConfirm(connection, new Transaction().add(...ixs), [operator, demoMerchant]);
     await engineFetch(`/campaigns/${campaign.toBase58()}/state`).catch(() => null);
     return { campaign: campaign.toBase58(), deadlineMinutes, signature };
   }

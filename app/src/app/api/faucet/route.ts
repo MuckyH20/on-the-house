@@ -3,8 +3,8 @@ import {
   createMintToCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from '@solana/spl-token';
-import { sendAndConfirmTransaction, Transaction } from '@solana/web3.js';
-import { formatUsd, USDC_DECIMALS, USDC_UNIT } from '@oth/shared';
+import { Transaction } from '@solana/web3.js';
+import { formatUsd, sendAndConfirm, USDC_DECIMALS, USDC_UNIT } from '@oth/shared';
 import { HttpError, jsonError, parsePubkey, serverCtx } from '@/lib/server';
 
 /**
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       createMintToCheckedInstruction(usdcMint, ata, operator.publicKey, amount, USDC_DECIMALS),
     );
     try {
-      const signature = await sendAndConfirmTransaction(connection, tx, [operator], { commitment: 'confirmed' });
+      const signature = await sendAndConfirm(connection, tx, [operator]);
       return Response.json({ ok: true, amount: amount.toString(), message: `Added ${formatUsd(amount)} in demo dollars`, signature });
     } catch (e) {
       lastByWallet.delete(key); // don't charge the cooldown for a failed mint

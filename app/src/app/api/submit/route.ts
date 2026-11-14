@@ -1,4 +1,5 @@
 import { Transaction } from '@solana/web3.js';
+import { confirmSignature, TxError } from '@oth/shared';
 import { HttpError, jsonError, serverCtx } from '@/lib/server';
 
 /**
@@ -20,12 +21,13 @@ export async function POST(req: Request) {
     }
     if (!tx.feePayer?.equals(operator.publicKey)) throw new HttpError(400, 'transaction was not prepared by this server');
     if (!tx.verifySignatures(true)) throw new HttpError(400, 'transaction is missing a signature');
+    const lastValid = (await connection.getBlockHeight('confirmed')) + 150;
     const signature = await connection.sendRawTransaction(tx.serialize(), { maxRetries: 5 });
-    const res = await connection.confirmTransaction(
-      { signature, blockhash: tx.recentBlockhash!, lastValidBlockHeight: (await connection.getBlockHeight('confirmed')) + 150 },
-      'confirmed',
-    );
-    if (res.value.err) throw new HttpError(400, `transaction failed: ${JSON.stringify(res.value.err)}`);
+    try {
+      await confirmSignature(connection, signature, lastValid, 'confirmed');
+    } catch (e) {
+      throw new HttpError(e instanceof TxError ? 400 : 504, (e as Error).message);
+    }
     return Response.json({ signature });
   } catch (e) {
     return jsonError(e);

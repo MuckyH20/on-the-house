@@ -7,7 +7,7 @@ import {
   type TransactionInstruction,
 } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { assertDevnet, wsUrlFor, type EngineEnv } from '@oth/shared';
+import { assertDevnet, confirmSignature, TxError, wsUrlFor, type EngineEnv } from '@oth/shared';
 import { loadKeypair } from '@oth/shared/node';
 import { fetchConfig, getProgram, type OthProgram } from '@oth/shared/program';
 
@@ -68,8 +68,12 @@ export async function sendIxs(
     opts.onSigned?.(signature);
     try {
       await connection.sendRawTransaction(tx.serialize(), { skipPreflight: false, maxRetries: 5 });
-      const res = await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, opts.commitment ?? 'confirmed');
-      if (res.value.err) throw new TxFailedError(signature, JSON.stringify(res.value.err));
+      try {
+        await confirmSignature(connection, signature, lastValidBlockHeight, opts.commitment ?? 'confirmed');
+      } catch (e) {
+        if (e instanceof TxError) throw new TxFailedError(signature, e.detail);
+        throw e;
+      }
       return signature;
     } catch (e) {
       lastErr = e;

@@ -6,9 +6,8 @@ import {
   type PublicKey,
   type Signer,
   type Transaction,
-  sendAndConfirmTransaction,
 } from '@solana/web3.js';
-import { assertDevnet, wsUrlFor } from '@oth/shared';
+import { assertDevnet, sendAndConfirm, wsUrlFor } from '@oth/shared';
 
 export const SOLANA_BIN = `${homedir()}/.local/share/solana/install/active_release/bin`;
 
@@ -21,7 +20,7 @@ export async function connect(rpcUrl: string, wsUrl?: string): Promise<{ connect
 export const sol = (lamports: number) => (lamports / LAMPORTS_PER_SOL).toFixed(4);
 
 export async function send(connection: Connection, tx: Transaction, signers: Signer[]): Promise<string> {
-  return sendAndConfirmTransaction(connection, tx, signers, { commitment: 'confirmed', maxRetries: 5 });
+  return sendAndConfirm(connection, tx, signers as Keypair[]);
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Connection, Keypair, Transaction } from '@solana/web3.js';
 import bs58 from 'bs58';
+import { confirmSignature } from '@oth/shared';
 
 export const ENGINE_URL = (process.env.NEXT_PUBLIC_ENGINE_URL ?? 'http://localhost:8787').replace(/\/$/, '');
 export const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? 'https://api.devnet.solana.com';
@@ -118,9 +119,13 @@ export async function signAndSend(base64Tx: string, signer: Keypair): Promise<st
   tx.partialSign(signer);
   const c = connection();
   const sig = await c.sendRawTransaction(tx.serialize(), { maxRetries: 5 });
-  const bh = { blockhash: tx.recentBlockhash!, lastValidBlockHeight: tx.lastValidBlockHeight ?? (await c.getBlockHeight()) + 150 };
-  const res = await c.confirmTransaction({ signature: sig, ...bh }, 'confirmed');
-  if (res.value.err) throw new Error(friendlyTxError(JSON.stringify(res.value.err)));
+  // Poll the status (websocket confirmations can be missed); a landed payment is never reported as failed.
+  const lastValid = tx.lastValidBlockHeight ?? (await c.getBlockHeight('confirmed')) + 150;
+  try {
+    await confirmSignature(c, sig, lastValid, 'confirmed');
+  } catch (e) {
+    throw new Error(friendlyTxError((e as Error).message));
+  }
   return sig;
 }
 

@@ -8,6 +8,7 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 import { formatUsd } from '@oth/shared';
 import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
 import { GameCard } from '@/components/GameCard';
+import { Button, EmptyState, Notice, PageSkeleton, Simulated, Spinner } from '@/components/ui';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
 import { customerOffer, gameFor } from '@/lib/game';
 import { DEMO_SHOP } from '@/lib/shop';
@@ -129,115 +130,122 @@ export default function PromoPage() {
     }
   }
 
-  if (state.error && !state.data) return <div className="py-20 text-center text-muted">This promo couldn’t be found.</div>;
-  if (!c || !shop) return <div className="py-20 text-center text-muted">Loading…</div>;
+  if (state.error && !state.data)
+    return (
+      <div className="mx-auto max-w-md pt-10">
+        <EmptyState icon="🔍" title="This promo couldn’t be found" body="Check the link or ask the shop for a new one." />
+      </div>
+    );
+  if (!c || !shop) return <PageSkeleton cards={3} />;
 
   return (
-    <div className="mx-auto max-w-md space-y-4 pb-10">
+    <div className="mx-auto max-w-md space-y-4 pb-6">
       <header className="pt-2 text-center">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted">Game-day promo</div>
-        <h1 className="mt-1 text-2xl font-bold">{shop.name}</h1>
+        <div className="t-label text-brand">Game-day promo</div>
+        <h1 className="t-h1 mt-1.5">{shop.name}</h1>
       </header>
 
       {ended ? (
-        <div className="rounded-2xl bg-line p-4 text-center text-sm">
-          This promo is over. {c.outcome === 'yes' ? `${game?.team ?? 'They'} won — everyone who ordered got their money back!` : `${game?.team ?? 'They'} didn’t win this time.`}
+        <div className={`notice text-center ${c.outcome === 'yes' ? 'notice-good' : 'bg-paper text-muted'}`}>
+          This promo is over. {c.outcome === 'yes' ? `${game?.team ?? 'They'} won — everyone who ordered got their money back! 🎉` : `${game?.team ?? 'They'} didn’t win this time.`}
         </div>
       ) : game ? (
         <>
-          <GameCard game={game} offer={customerOffer(refundPct)} audience="customer" />
-          <p className="px-1 text-center text-xs text-muted">
+          <GameCard game={game} offer={customerOffer(refundPct)} audience="customer" chance={state.data?.market?.yesAsk ? Number(state.data.market.yesAsk) : null} />
+          <p className="px-2 text-center text-sm text-muted">
             Pay the normal price now. If {game.team} wins, {refundPct >= 100 ? 'all of it' : `${refundPct}% of it`} comes back to you automatically right after the final{game.finalAt ? ` (${game.finalAt})` : ''}.
           </p>
         </>
       ) : null}
       {state.data?.simulated.gemini && !ended ? (
-        <div className="text-center text-xs text-muted">Practice game · SIMULATED result — your order and refund are real demo transactions</div>
+        <div className="text-center"><Simulated label="Practice game · simulated result" /></div>
       ) : null}
-      {!ended && quote.data && !available ? <div className="rounded-xl bg-warn-soft p-3 text-sm text-warn">{quote.data.reason}</div> : null}
+      {!ended && quote.data && !available ? <Notice tone="caution">{quote.data.reason}</Notice> : null}
 
       {/* menu */}
-      <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+      <div className="card divide-y divide-line overflow-hidden p-0">
         {items.map((m) => (
-          <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-            <div className="flex-1">
+          <div key={m.id} className="flex items-center gap-3 px-4 py-3.5">
+            <div className="min-w-0 flex-1">
               <div className="font-medium">{m.name}</div>
               <div className="tabular text-sm text-muted">{formatUsd(m.price)}</div>
             </div>
             {cart[m.id] ? (
               <>
-                <button aria-label={`Remove ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: Math.max(0, (x[m.id] ?? 0) - 1) }))} className="h-9 w-9 rounded-full border border-line">−</button>
-                <span className="tabular w-4 text-center">{cart[m.id]}</span>
+                <button aria-label={`Remove ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: Math.max(0, (x[m.id] ?? 0) - 1) }))} className="btn btn-secondary h-10 w-10 rounded-full p-0 text-lg">−</button>
+                <span className="tabular w-5 text-center font-semibold">{cart[m.id]}</span>
               </>
             ) : null}
-            <button aria-label={`Add ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: (x[m.id] ?? 0) + 1 }))} className="h-9 w-9 rounded-full bg-ink text-white">+</button>
+            <button aria-label={`Add ${m.name}`} onClick={() => setCart((x) => ({ ...x, [m.id]: (x[m.id] ?? 0) + 1 }))} className="btn btn-dark h-10 w-10 rounded-full p-0 text-lg">+</button>
           </div>
         ))}
       </div>
 
       {/* checkout */}
-      <div className="space-y-3 rounded-2xl border border-line bg-card p-4">
+      <div className="card space-y-4 p-5">
         <div className="flex items-baseline justify-between">
           <span className="text-muted">Total</span>
-          <span className="tabular text-2xl font-bold">{formatUsd(total)}</span>
+          <span className="tabular text-3xl font-extrabold tracking-tight">{formatUsd(total)}</span>
         </div>
         {total > 0n && quote.data?.refund && !ended && game ? (
-          <div className="rounded-xl bg-good-soft p-2.5 text-sm text-good">If {game.team} wins, you get <b>{formatUsd(quote.data.refund)}</b> back — automatically.</div>
+          <Notice tone="good">If {game.team} wins, you get <b>{formatUsd(quote.data.refund)}</b> back — automatically.</Notice>
         ) : null}
-        <button onClick={() => void pay()} disabled={!payer || total === 0n || busy !== null || !available || !!ended || (balance !== null && balance < total)} className="w-full rounded-xl bg-brand py-3.5 text-base font-semibold text-white disabled:opacity-40">
+        <Button onClick={() => void pay()} loading={busy === 'pay'} disabled={!payer || total === 0n || busy !== null || !available || !!ended || (balance !== null && balance < total)} size="lg" block>
           {busy === 'pay' ? 'Paying…' : `Pay ${total > 0n ? formatUsd(total) : ''}`}
-        </button>
+        </Button>
         <div className="flex items-center justify-between text-sm">
-          <span className="text-muted">Your balance: <span className="tabular">{balance === null ? '…' : formatUsd(balance)}</span></span>
-          <button onClick={() => void addFunds()} disabled={busy !== null} className="text-brand underline disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
+          <span className="text-muted">Your balance: <span className="tabular font-medium text-ink">{balance === null ? '…' : formatUsd(balance)}</span></span>
+          <button onClick={() => void addFunds()} disabled={busy !== null} className="link disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
         </div>
-        {balance !== null && total > 0n && balance < total ? <div className="text-sm text-warn">Not enough balance — tap “Add $20 (demo)” first.</div> : null}
+        {balance !== null && total > 0n && balance < total ? <Notice tone="caution">Not enough balance — tap “Add $20 (demo)” first.</Notice> : null}
         {privyEnabled() && isShopAccount ? (
-          <div className="rounded-lg bg-paper px-3 py-2 text-xs text-muted">
-            You’re signed in as this shop, so this test order is paid from this device.
-          </div>
+          <Notice tone="info">You’re signed in as this shop, so this test order is paid from this device.</Notice>
         ) : privyEnabled() ? (
           usingAccount ? (
-            <div className="flex items-center justify-between rounded-lg bg-good-soft px-3 py-2 text-xs text-good">
+            <div className="notice notice-good flex items-center justify-between gap-2">
               <span>Rewards save to your account{account.label ? ` (${account.label})` : ''}</span>
               <button onClick={() => void account.logout()} className="underline">Sign out</button>
             </div>
           ) : (
-            <button onClick={account.login} disabled={!account.ready} className="w-full rounded-lg border border-line py-2 text-sm">
-              Sign in to save your rewards <span className="text-muted">— optional</span>
-            </button>
+            <Button onClick={account.login} disabled={!account.ready} variant="secondary" block>
+              Sign in to save your rewards <span className="font-normal text-subtle">— optional</span>
+            </Button>
           )
         ) : null}
-        {error ? <div className="text-sm text-warn">{error}</div> : null}
-        <button onClick={() => setShowWallet((v) => !v)} className="w-full text-center text-xs text-muted underline" disabled={total === 0n}>
+        {error ? <Notice tone="error">{error}</Notice> : null}
+        <button onClick={() => setShowWallet((v) => !v)} className="link-muted w-full text-center text-xs" disabled={total === 0n}>
           {showWallet ? 'Hide' : 'Pay with a crypto wallet instead'}
         </button>
         {showWallet && total > 0n ? <WalletQr campaign={campaign} amount={total} items={summary} refund={quote.data?.refund ?? '0'} onPaid={(sig) => setReceipt({ amount: total.toString(), refund: quote.data?.refund ?? '0', signature: sig, device: false })} /> : null}
       </div>
 
       {receipt ? (
-        <div ref={receiptRef} className="space-y-2 rounded-2xl border border-good bg-card p-4">
+        <div ref={receiptRef} className="card animate-fade-up space-y-3 p-5 ring-2 ring-good/60">
           <div className="flex items-start justify-between gap-3">
-            <div className="text-lg font-bold">Thanks! Paid {formatUsd(receipt.amount)} ✅</div>
-            <div className="text-right">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted">Order</div>
-              <div className="font-mono text-xl font-bold tracking-wider">#{orderNumber(receipt.signature)}</div>
+            <div>
+              <div className="t-label text-good">Paid ✓</div>
+              <div className="t-h2 mt-1">Thanks! {formatUsd(receipt.amount)}</div>
+            </div>
+            <div className="rounded-xl bg-paper px-3 py-2 text-right">
+              <div className="t-label text-subtle">Order</div>
+              <div className="font-mono text-2xl font-bold tracking-wider">#{orderNumber(receipt.signature)}</div>
             </div>
           </div>
-          {game ? <div className="text-sm">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back — automatically. No need to do anything.</div> : null}
+          {game ? <p className="text-[0.9375rem]">If {game.team} wins, you get <b>{formatUsd(receipt.refund)}</b> back — automatically. No need to do anything.</p> : null}
           <OrderStatusLine signature={receipt.signature} />
           {receipt.device && privyEnabled() ? (
-            <div className="rounded-lg bg-paper p-2.5 text-xs">
-              This reward is saved on this phone. <button onClick={account.login} className="font-medium text-brand underline">Sign in</button> before your next order to keep rewards on any device.
+            <div className="rounded-xl bg-paper p-3 text-sm text-muted">
+              This reward is saved on this phone. <button onClick={account.login} className="link">Sign in</button> before your next order to keep rewards on any device.
             </div>
           ) : null}
-          {!receipt.device ? <div className="text-xs text-good">Saved to your account — see it on any device.</div> : null}
-          <Link href="/me" className="inline-block pt-1 text-sm text-brand underline">See my rewards</Link>
+          {!receipt.device ? <div className="text-sm text-good">Saved to your account — see it on any device.</div> : null}
+          <Link href="/me" className="link inline-block text-sm">See my rewards →</Link>
         </div>
       ) : null}
 
-      <footer className="pt-2 text-center text-xs text-muted">
-        <Link href={`/proof/${campaign}`} className="underline">How refunds are guaranteed</Link> · Powered by On the House
+      <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-subtle">
+        <Link href={`/proof/${campaign}`} className="link-muted">How refunds are guaranteed</Link>
+        <span>Powered by <b className="font-semibold text-muted">On the House</b></span>
       </footer>
     </div>
   );
@@ -278,7 +286,7 @@ function WalletQr({ campaign, amount, items, refund, onPaid }: { campaign: strin
   }, [reference]);
   return (
     <div className="flex flex-col items-center gap-2 py-2">
-      <div ref={ref} className="rounded-lg bg-white p-2" />
+      <div ref={ref} className="rounded-xl border border-line bg-white p-2" />
       <div className="text-center text-xs text-muted">Scan with a Solana wallet app (test network). Needs demo dollars in that wallet.</div>
     </div>
   );
@@ -289,6 +297,10 @@ function OrderStatusLine({ signature }: { signature: string }) {
   const order = usePoll(() => engine<ShopOrder>(`/orders/${signature}`), 4_000, [signature]);
   const status = order.data?.status ?? 'new';
   const text = { new: 'Preparing your order — show this number at the counter.', ready: 'Ready for pickup ✓', done: 'Picked up — enjoy!' }[status];
-  const tone = status === 'ready' ? 'bg-good-soft text-good font-semibold' : 'bg-paper text-muted';
-  return <div className={`rounded-lg px-3 py-2 text-sm ${tone}`}>{text}</div>;
+  return (
+    <div className={`notice flex items-center gap-2 ${status === 'ready' ? 'notice-good font-semibold' : 'bg-paper text-muted'}`} role="status" aria-live="polite">
+      {status === 'new' ? <Spinner className="text-brand" /> : null}
+      {text}
+    </div>
+  );
 }

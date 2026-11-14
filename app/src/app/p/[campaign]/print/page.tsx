@@ -3,7 +3,9 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
+import { TeamMark } from '@/components/GameCard';
 import { Qr } from '@/components/Qr';
+import { Button, PageSkeleton } from '@/components/ui';
 import { engine } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { DEMO_SHOP } from '@/lib/shop';
@@ -23,24 +25,31 @@ export default function PrintPage() {
     });
   }, [campaign]);
   const game = gameFor(state?.market ?? null);
-  if (!state || !game || !origin) return <div className="py-20 text-center text-muted">Preparing your sign…</div>;
+  if (!state || !game || !origin) return <PageSkeleton cards={1} />;
   const pct = state.campaign.refundBps / 100;
   return (
-    <div className="mx-auto flex min-h-[90vh] max-w-xl flex-col items-center justify-center gap-6 py-6 text-center">
-      <div className="text-sm font-semibold uppercase tracking-[0.2em] text-muted">{shopName}</div>
-      <h1 className="text-5xl font-extrabold leading-tight tracking-tight">
-        {pct >= 100 ? 'Your order is FREE' : `${pct}% back`}
-        <br />
-        <span className="text-brand">if {game.team} wins</span>
-      </h1>
-      <div className="text-xl">
-        {game.emoji} {game.matchup}
-        {game.finalAt ? <span className="text-muted"> · final {game.finalAt}</span> : null}
+    <div className="mx-auto flex min-h-[88vh] max-w-xl flex-col items-center justify-center py-6 text-center">
+      <div className="panel-warm w-full px-6 py-10 sm:px-12 sm:py-14 print:bg-none print:shadow-none">
+        <div className="t-label text-brand-strong">{shopName} · Game-day promo</div>
+        <h1 className="mt-4 text-[2.5rem] font-extrabold leading-[1.04] tracking-[-0.04em] sm:text-6xl">
+          {pct >= 100 ? 'Your order is free' : `${pct}% back`}
+          <br />
+          <span className="text-brand">if {game.team} wins</span>
+        </h1>
+        <div className="mt-6 inline-flex items-center gap-3 rounded-2xl bg-card px-4 py-2.5 text-left shadow-[var(--shadow-card)]">
+          <TeamMark game={game} size={32} />
+          <div>
+            <div className="font-semibold leading-tight">{game.matchup}</div>
+            {game.finalAt ? <div className="text-sm text-muted">Final {game.finalAt}</div> : null}
+          </div>
+        </div>
+        <div className="mt-8 flex justify-center">
+          <Qr value={`${origin}/p/${campaign}`} size={240} className="shadow-[var(--shadow-raised)]" />
+        </div>
+        <div className="t-h2 mt-6">Scan to order</div>
+        <p className="mx-auto mt-2 max-w-sm text-muted">If {game.team} wins, your money comes back automatically. No app, nothing to sign up for.</p>
       </div>
-      <Qr value={`${origin}/p/${campaign}`} size={260} className="border border-line" />
-      <div className="text-lg font-semibold">Scan to order</div>
-      <p className="max-w-sm text-sm text-muted">If {game.team} wins, your money comes back automatically. Nothing to sign up for.</p>
-      <button onClick={() => window.print()} className="rounded-xl bg-ink px-6 py-3 font-semibold text-white print:hidden">Print this sign</button>
+      <Button onClick={() => window.print()} variant="dark" size="lg" className="mt-6 print:hidden">Print this sign</Button>
     </div>
   );
 }

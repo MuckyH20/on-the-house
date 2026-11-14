@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { formatBps, formatUsd, microsToPrice } from '@oth/shared';
 import type { CampaignState, StoredEvent } from '@oth/shared/api';
-import { CoverageBar, Simulated } from '@/components/ui';
+import { Badge, CampaignStatus, CoverageBar, EmptyState, Eyebrow, PageSkeleton, Simulated } from '@/components/ui';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
 import { short, useEngineStream } from '@/lib/client';
@@ -26,33 +26,38 @@ export default function ProofPage() {
   const { campaign } = useParams<{ campaign: string }>();
   const { data: s, live, error } = useEngineStream<CampaignState>(`/campaigns/${campaign}/stream`, `/campaigns/${campaign}/state`);
 
-  if (!s) return <div className="py-20 text-center text-sm text-muted">{error ? `Can’t load this promo: ${error}` : 'Loading…'}</div>;
+  if (!s) return error ? <div className="mx-auto max-w-md pt-10"><EmptyState icon="🔍" title="Can’t load this promo" body={error} /></div> : <PageSkeleton cards={3} />;
   const c = s.campaign;
   const game = gameFor(s.market);
   const fully = s.coverageBps >= 10_000;
   const outcome = c.status === 'settled' ? (c.outcome === 'yes' ? 'won' : 'lost') : null;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5 pb-10">
-      <header className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold">Protection details</h1>
-          <span className={`text-xs ${live ? 'text-good' : 'text-muted'}`}>{live ? '● live' : '○ updating'}</span>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <header className="space-y-3">
+        <Eyebrow>Public proof</Eyebrow>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="t-h1">Protection details</h1>
+          <CampaignStatus status={c.status} outcome={c.outcome} pausedByHedger={s.hedger.pausedByHedger} />
+          <span className="flex items-center gap-1.5 text-xs text-subtle">
+            <span className={`h-1.5 w-1.5 rounded-full ${live ? 'bg-good' : 'bg-line-strong'}`} aria-hidden="true" />
+            {live ? 'Live updates' : 'Updating…'}
+          </span>
         </div>
-        <p className="text-sm text-muted">
+        <p className="t-body text-muted">
           {c.refundBps >= 10_000 ? 'Customers’ orders are free' : `Customers get ${c.refundBps / 100}% back`} if <b className="text-ink">{game?.condition ?? s.market?.condition ?? c.marketSymbol}</b>. Every refund promised to a
           customer is backed by a matching contract on Gemini that pays out if it happens.
         </p>
         <div className="flex flex-wrap gap-2">
           <Simulated show={s.simulated.gemini} label="SIMULATED protection (demo order book)" />
           <Simulated show={s.simulated.resolution} label="SIMULATED result" />
-          {s.venue ? <span className="inline-flex items-center rounded border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[11px] font-bold text-sky-800">GEMINI TEST MARKET · TEST FUNDS</span> : null}
+          {s.venue ? <Badge tone="info">Gemini test market · test funds</Badge> : null}
         </div>
       </header>
 
-      <section className="space-y-4 rounded-2xl border border-line bg-card p-4">
+      <section className="card space-y-5 p-5 sm:p-6">
         {outcome ? (
-          <div className={`rounded-xl p-3 text-sm ${outcome === 'won' ? 'bg-good-soft text-good' : 'bg-paper'}`}>
+          <div className={`notice ${outcome === 'won' ? 'notice-good font-medium' : 'bg-paper text-muted'}`}>
             {outcome === 'won'
               ? `${game?.team ?? 'The team'} won — ${formatUsd(c.totalPaidOut)} refunded to customers automatically.`
               : `${game?.team ?? 'The team'} lost — no refunds were owed. The shop kept every sale.`}
@@ -65,8 +70,8 @@ export default function ProofPage() {
         </div>
         <CoverageBar bps={s.coverageBps} />
         {s.venue ? (
-          <div className="rounded-xl bg-paper p-3 text-sm">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted">Gemini’s own records</div>
+          <div className="rounded-xl bg-info-soft p-4 text-sm">
+            <div className="t-label text-info">Gemini’s own records</div>
             <div className="mt-1 grid gap-1 sm:grid-cols-3">
               <div>Contracts held: <b className="tabular">{s.venue.positionContracts ?? '0'}</b></div>
               <div>Gemini’s result: <b>{s.venue.resolutionSide ? (s.venue.resolutionSide === 'yes' ? 'won' : 'lost') : 'not yet'}</b></div>
@@ -74,15 +79,15 @@ export default function ProofPage() {
             </div>
           </div>
         ) : null}
-        {s.hedger.pausedByHedger ? <div className="rounded-xl bg-warn-soft p-3 text-sm text-warn">Sales are paused because protection got more expensive than the shop allowed. They resume automatically.</div> : null}
+        {s.hedger.pausedByHedger ? <div className="notice notice-caution">Sales are paused because protection got more expensive than the shop allowed. They resume automatically.</div> : null}
       </section>
 
       {(() => {
         const orders = s.events.filter((e) => e.name === 'purchaseEvent');
         if (!orders.length) return null;
         return (
-          <section className="rounded-2xl border border-line bg-card p-4">
-            <h2 className="text-sm font-semibold">Orders ({orders.length})</h2>
+          <section className="card p-5 sm:p-6">
+            <h2 className="t-h3">Orders <span className="text-subtle">({orders.length})</span></h2>
             <div className="mt-2 divide-y divide-line text-sm">
               {orders.slice(0, 20).map((e) => (
                 <div key={`${e.signature}:${e.index}`} className="flex items-center gap-3 py-2">
@@ -96,8 +101,11 @@ export default function ProofPage() {
         );
       })()}
 
-      <details className="rounded-2xl border border-line bg-card p-4">
-        <summary className="cursor-pointer text-sm font-semibold">For the curious: the public record</summary>
+      <details className="card group p-5 sm:p-6">
+        <summary className="flex cursor-pointer list-none items-center justify-between font-semibold">
+          For the curious: the public record on Solana
+          <span className="text-muted transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+        </summary>
         <div className="mt-3 space-y-4 text-sm">
           <div className="grid gap-1 text-xs text-muted sm:grid-cols-2">
             <div>Market: <code>{c.marketSymbol}</code>{s.market?.yesAsk ? ` · price $${s.market.yesAsk}` : ''}</div>
@@ -147,9 +155,9 @@ export default function ProofPage() {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div>
-      <div className="text-xs text-muted">{label}</div>
-      <div className="tabular text-2xl font-semibold">{value}</div>
-      {sub ? <div className="text-xs text-muted">{sub}</div> : null}
+      <div className="t-small text-muted">{label}</div>
+      <div className="tabular mt-0.5 text-2xl font-bold tracking-tight sm:text-3xl">{value}</div>
+      {sub ? <div className="mt-0.5 text-xs text-subtle">{sub}</div> : null}
     </div>
   );
 }

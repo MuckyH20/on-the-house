@@ -57,12 +57,15 @@ async function main() {
   assert.ok(tx.signatures[0]!.signature, 'operator (fee payer) pre-signed');
   tx.partialSign(burner);
   const sig = await connection.sendRawTransaction(tx.serialize());
-  // Wait until confirmed or the blockhash expires (a fixed 30 s timeout is too short on a busy devnet).
-  const res = await connection.confirmTransaction(
-    { signature: sig, blockhash: tx.recentBlockhash!, lastValidBlockHeight: (await connection.getBlockHeight('confirmed')) + 150 },
-    'confirmed',
-  );
-  if (res.value.err) throw new Error(`purchase failed: ${JSON.stringify(res.value.err)}`);
+  // Poll the signature status (websocket confirmations can be missed on some RPC providers).
+  const lastValid = (await connection.getBlockHeight('confirmed')) + 150;
+  for (;;) {
+    const st = (await connection.getSignatureStatuses([sig], { searchTransactionHistory: true })).value[0];
+    if (st?.err) throw new Error(`purchase failed: ${JSON.stringify(st.err)}`);
+    if (st?.confirmationStatus === 'confirmed' || st?.confirmationStatus === 'finalized') break;
+    if ((await connection.getBlockHeight('confirmed')) > lastValid) throw new Error('purchase expired before confirming');
+    await sleep(1000);
+  }
   console.log(`purchase ${sig}`);
   await fetch(`${ENGINE}/campaigns/${campaign}/kick`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
 

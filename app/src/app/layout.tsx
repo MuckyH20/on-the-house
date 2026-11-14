@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { SiteHeader } from '@/components/SiteHeader';
+import { Inter } from 'next/font/google';
+import { SiteFooter, SiteHeader } from '@/components/SiteHeader';
 import './globals.css';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'On the House — free if your team wins',
@@ -12,10 +15,11 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-dvh">
+    <html lang="en" className={inter.variable}>
+      <body className="flex min-h-dvh flex-col">
         <SiteHeader />
-        <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6 sm:px-8 sm:py-10">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );

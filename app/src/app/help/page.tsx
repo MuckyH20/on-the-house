@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { ButtonLink, Eyebrow } from '@/components/ui';
 
 export const metadata = { title: 'Help — On the House' };
 
@@ -101,34 +101,42 @@ const faqs: [string, React.ReactNode][] = [
 
 export default function HelpPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-10 pb-10">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight">Help</h1>
-        <p className="mt-2 text-muted">Everything you need in one minute.</p>
+    <div className="mx-auto max-w-3xl space-y-12 pb-6">
+      <header className="text-center sm:text-left">
+        <Eyebrow>Help center</Eyebrow>
+        <h1 className="t-h1 mt-3">Everything you need, in one minute.</h1>
+        <p className="t-body mt-3 text-muted">A quick start, then answers to the questions shop owners ask most.</p>
       </header>
 
-      <section className="rounded-2xl border border-line bg-card p-5">
-        <h2 className="font-semibold">Quickstart</h2>
-        <ol className="mt-3 space-y-3 text-sm">
-          <li><b>1. Sign in</b> with email or Google, then add your shop name and menu.</li>
-          <li><b>2. Pick a game</b> — we suggest the next one — and an offer. You’ll see the exact cost.</li>
-          <li><b>3. Launch</b> and print the QR sign for your counter (or share the link).</li>
-          <li><b>4. Serve orders</b> from the Orders screen — customers show their order number.</li>
-          <li><b>5. That’s it.</b> If your team wins, customers are refunded automatically.</li>
+      <section className="card p-6 sm:p-8">
+        <h2 className="t-h3">Quickstart</h2>
+        <ol className="mt-5 space-y-4">
+          {[
+            ['Sign in', 'with email or Google, then add your shop name and menu.'],
+            ['Pick a game', '— we suggest the next one — and an offer. You’ll see the exact cost.'],
+            ['Launch', 'and print the QR sign for your counter (or share the link).'],
+            ['Serve orders', 'from the Orders screen — customers show their order number.'],
+            ['That’s it.', 'If your team wins, customers are refunded automatically.'],
+          ].map(([b, rest], i) => (
+            <li key={b} className="flex gap-4">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold text-brand">{i + 1}</span>
+              <p className="t-body pt-1 text-muted"><b className="text-ink">{b}</b> {rest}</p>
+            </li>
+          ))}
         </ol>
-        <Link href="/start" className="mt-4 inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Start your promo</Link>
+        <ButtonLink href="/start" className="mt-7">Start your promo</ButtonLink>
       </section>
 
       <section>
-        <h2 className="font-semibold">Questions</h2>
-        <div className="mt-3 divide-y divide-line rounded-2xl border border-line bg-card">
+        <h2 className="t-h2">Questions</h2>
+        <div className="card mt-5 divide-y divide-line overflow-hidden p-0">
           {faqs.map(([q, a]) => (
-            <details key={q} className="group px-5 py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between font-medium">
+            <details key={q} className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-medium transition-colors hover:bg-paper sm:px-6">
                 {q}
-                <span className="ml-3 text-muted transition group-open:rotate-45">+</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-paper text-muted transition-transform duration-200 group-open:rotate-45" aria-hidden="true">+</span>
               </summary>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{a}</p>
+              <p className="t-body px-5 pb-5 text-muted sm:px-6">{a}</p>
             </details>
           ))}
         </div>

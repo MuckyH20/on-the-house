@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { formatUsd } from '@oth/shared';
 import type { WalletClaim } from '@oth/shared/api';
-import { Card, Pill, Simulated } from '@/components/ui';
+import { Button, Card, EmptyState, Eyebrow, Pill, Simulated, Skeleton } from '@/components/ui';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
@@ -35,7 +35,10 @@ export default function MePage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-2xl font-bold">My rewards</h1>
+      <header>
+        <Eyebrow>Your game-day orders</Eyebrow>
+        <h1 className="t-h1 mt-2">My rewards</h1>
+      </header>
       {privyEnabled() ? (
         account.authenticated ? (
           <div className="flex items-center justify-between text-xs text-muted">
@@ -43,18 +46,18 @@ export default function MePage() {
             <button onClick={() => void account.logout()} className="underline">Sign out</button>
           </div>
         ) : (
-          <button onClick={account.login} disabled={!account.ready} className="w-full rounded-xl border border-line bg-card py-2.5 text-sm">
+          <Button onClick={account.login} disabled={!account.ready} variant="secondary" block>
             Sign in to see rewards from your other devices
-          </button>
+          </Button>
         )
       ) : null}
       {totalBack > 0n ? (
-        <Card className="border-good bg-good-soft text-center">
-          <div className="text-3xl">🎉</div>
-          <div className="text-xl font-bold text-good">You got {formatUsd(totalBack)} back!</div>
-        </Card>
+        <div className="card animate-pop bg-good-soft p-6 text-center ring-1 ring-good/30">
+          <div className="text-4xl" aria-hidden="true">🎉</div>
+          <div className="t-h2 mt-2 text-good">You got {formatUsd(totalBack)} back!</div>
+        </div>
       ) : null}
-      {pending > 0n ? <Card className="text-sm">Waiting on games: up to <b>{formatUsd(pending)}</b> could come back to you.</Card> : null}
+      {pending > 0n ? <div className="notice notice-info">Waiting on games: up to <b>{formatUsd(pending)}</b> could come back to you.</div> : null}
 
       {list.map((c) => {
         const spent = c.purchases.reduce((s, p) => s + BigInt(p.amount), 0n);
@@ -92,8 +95,9 @@ export default function MePage() {
           </Card>
         );
       })}
-      {claims.data && list.length === 0 ? <Card className="text-sm text-muted">No game-day orders yet on this device.</Card> : null}
-      {wallet ? <div className="text-center text-xs text-muted">Your rewards are saved on this device ({short(wallet, 4)}).</div> : null}
+      {!claims.data && wallet ? <><Skeleton className="h-36 w-full rounded-2xl" /><Skeleton className="h-36 w-full rounded-2xl" /></> : null}
+      {claims.data && list.length === 0 ? <EmptyState icon="🎟️" title="No game-day orders yet" body="Order from a shop’s promo page and your rewards will show up here." /> : null}
+      {wallet ? <div className="pt-2 text-center text-xs text-subtle">Your rewards are saved on this device ({short(wallet, 4)}).</div> : null}
     </div>
   );
 }

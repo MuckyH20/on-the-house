@@ -8,6 +8,11 @@ import type { MarketSummary } from '@oth/shared/api';
 export interface Game {
   team: string;
   emoji: string;
+  /** Monogram + team color for the team mark (we draw monograms, not official logos). */
+  mark: string;
+  color: string;
+  /** ISO time of the final (for countdowns). */
+  closesAt: string | null;
   versus: string;
   /** "8pm ET" */
   finalAt: string;
@@ -19,13 +24,13 @@ export interface Game {
   condition: string;
 }
 
-const TEAMS: Record<string, { name: string; emoji: string }> = {
-  BTC: { name: 'Bitcoin', emoji: '🟠' },
-  ETH: { name: 'Ethereum', emoji: '🔷' },
-  SOL: { name: 'Solana', emoji: '🟣' },
-  XRP: { name: 'XRP', emoji: '⚫' },
-  GOLD: { name: 'Gold', emoji: '🟡' },
-  SILVER: { name: 'Silver', emoji: '⚪' },
+const TEAMS: Record<string, { name: string; emoji: string; mark: string; color: string }> = {
+  BTC: { name: 'Bitcoin', emoji: '🟠', mark: '₿', color: '#f7931a' },
+  ETH: { name: 'Ethereum', emoji: '🔷', mark: 'Ξ', color: '#4f46e5' },
+  SOL: { name: 'Solana', emoji: '🟣', mark: '◎', color: '#7c3aed' },
+  XRP: { name: 'XRP', emoji: '⚫', mark: 'X', color: '#334155' },
+  GOLD: { name: 'Gold', emoji: '🟡', mark: 'Au', color: '#ca8a04' },
+  SILVER: { name: 'Silver', emoji: '⚪', mark: 'Ag', color: '#64748b' },
 };
 
 export function gameFor(m: Pick<MarketSummary, 'title' | 'condition' | 'closesAt'> | null | undefined): Game | null {
@@ -34,7 +39,7 @@ export function gameFor(m: Pick<MarketSummary, 'title' | 'condition' | 'closesAt
   const [eventTitle, label = ''] = m.title.split(' — ');
   const price = /^(\S+) price\b/i.exec(eventTitle?.trim() ?? '');
   const sym = price?.[1]?.trim().toUpperCase() ?? '';
-  const team = TEAMS[sym] ?? (price ? { name: price[1]!.trim(), emoji: '🏁' } : null);
+  const team = TEAMS[sym] ?? (price ? { name: price[1]!.trim(), emoji: '🏁', mark: price[1]!.trim().slice(0, 2).toUpperCase(), color: '#57534e' } : null);
   if (team) {
     const up = /^up$/i.test(label.trim());
     const threshold = label.replace(/\s*or above$/i, '').trim();
@@ -43,6 +48,9 @@ export function gameFor(m: Pick<MarketSummary, 'title' | 'condition' | 'closesAt
     return {
       team: team.name,
       emoji: team.emoji,
+      mark: team.mark,
+      color: team.color,
+      closesAt: m.closesAt ?? null,
       versus,
       finalAt,
       matchup: `${team.name} vs. ${versus}`,
@@ -50,7 +58,7 @@ export function gameFor(m: Pick<MarketSummary, 'title' | 'condition' | 'closesAt
       condition: `${winCondition}${finalAt ? ` at ${finalAt}` : ''}`,
     };
   }
-  return { team: m.title, emoji: '🏁', versus: '', finalAt, matchup: m.title, winCondition: m.condition, condition: m.condition };
+  return { team: m.title, emoji: '🏁', mark: '★', color: '#57534e', closesAt: m.closesAt ?? null, versus: '', finalAt, matchup: m.title, winCondition: m.condition, condition: m.condition };
 }
 
 function formatFinal(iso: string): string {

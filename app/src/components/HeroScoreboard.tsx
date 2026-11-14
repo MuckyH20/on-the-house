@@ -37,11 +37,17 @@ export function HeroScoreboard() {
       <dl className="board-rule mt-5 grid grid-cols-2 border-y">
         <div className="board-rule border-r py-3.5 pr-4">
           <dt className="board-label">Final</dt>
-          <dd className="digits mt-1.5 text-[2.5rem]">{SPURS.finalAt}</dd>
+          <dd className="mt-1.5">
+            <span className="digits text-[2.5rem]">{SPURS.finalAt}</span>
+            <span className="mt-1 block text-sm text-chalk-muted">tonight</span>
+          </dd>
         </div>
         <div className="py-3.5 pl-4">
           <dt className="board-label">Chance they win</dt>
-          <dd className="digits mt-1.5 text-[2.5rem]">{Math.round(ASK * 100)}%</dd>
+          <dd className="mt-1.5">
+            <span className="digits text-[2.5rem]">{Math.round(ASK * 100)}%</span>
+            <span className="mt-1 block text-sm text-chalk-muted">market odds</span>
+          </dd>
         </div>
       </dl>
 
@@ -50,7 +56,7 @@ export function HeroScoreboard() {
           <dt className="board-label">Free latte costs you</dt>
           <dd className="mt-1.5">
             <span className="t-score text-[2.5rem] text-chalk">${cost.toFixed(2)}</span>
-            <span className="mt-1 block text-sm text-chalk-muted">on ${LATTE.toFixed(2)}, win or lose</span>
+            <span className="mt-1 block text-sm text-chalk-muted">on a ${LATTE.toFixed(2)} latte, win or lose</span>
           </dd>
         </div>
         <div>

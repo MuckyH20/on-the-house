@@ -8,8 +8,20 @@ const faqs: [string, React.ReactNode][] = [
     <>
       You pick a game and an offer, like “your order is free if the Spurs win.” Every time a customer orders, we immediately
       buy a small “protection” contract on Gemini’s prediction market that pays out if your team wins. If it does, that
-      payout refunds your customers. You only ever pay the small, fixed cost shown before you launch.
+      payout refunds your customers. You only ever pay the cost per promo order shown before you launch.
     </>,
+  ],
+  [
+    'What games can I pick?',
+    <>
+      Games come from Gemini’s prediction markets, where the price shows the odds of a yes-or-no event. In this demo
+      they’re crypto-price games (“Bitcoin vs. $64,000”: does Bitcoin finish at or above $64,000?). When none are open,
+      you get a clearly labeled practice game. Any event with a market price works the same way, including sports.
+    </>,
+  ],
+  [
+    'Does it cost me on every sale?',
+    <>Only on orders made through your promo page. Sales at your register work exactly as before.</>,
   ],
   [
     'What if my team loses?',

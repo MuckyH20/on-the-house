@@ -3,7 +3,7 @@ import type { MarketSummary } from '@oth/shared/api';
 /**
  * Present a prediction market like a game: a "team", what it's up against, and when it's final.
  *   "BTC price today at 8pm EST — $71,000 or above" → Bitcoin vs. $71,000 · final 8pm ET
- *   "ETH price today at 4:15pm EST — Up"            → Ethereum vs. the clock · final 4:15pm ET
+ *   "ETH price today at 4:15pm EST — Up"            → Ethereum vs. its starting price · final 4:15pm ET
  */
 export interface Game {
   team: string;
@@ -45,7 +45,7 @@ export function gameFor(m: Pick<MarketSummary, 'title' | 'condition' | 'closesAt
   if (team) {
     const up = /^up$/i.test(label.trim());
     const threshold = label.replace(/\s*or above$/i, '').trim();
-    const versus = up ? 'the clock' : threshold || 'the line';
+    const versus = up ? 'its starting price' : threshold || 'the line';
     const winCondition = up ? `${team.name} finishes up` : `${team.name} finishes at or above ${threshold}`;
     return {
       team: team.name,

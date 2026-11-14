@@ -48,7 +48,7 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:grid-cols-[1.5fr_1fr_1fr] sm:px-8">
         <div>
           <Logo />
-          <p className="t-small mt-3 max-w-xs text-chalk-muted">“Free if your team wins” promos at a small, fixed cost. Every refund protected and paid automatically.</p>
+          <p className="t-small mt-3 max-w-xs text-chalk-muted">“Free if your team wins” promos for a set cost per promo order. If your team wins, the refunds are paid by us.</p>
         </div>
         <nav aria-label="Product" className="t-small space-y-2">
           <div className="board-label">Product</div>

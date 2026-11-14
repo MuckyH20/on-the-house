@@ -235,10 +235,10 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
 
       {isPracticeGame(market) ? (
         <div className="notice notice-caution mt-5">
-          <div className="font-semibold">No live Gemini games right now — this is a practice game</div>
+          <div className="font-bold">No live games right now, so here’s a practice game</div>
           <div className="mt-0.5 opacity-90">
-            Everything works the same: real sales and refunds on Solana. Only the protection and the result are SIMULATED.
-            Real games show up here automatically when Gemini has prices.
+            Orders, payments and refunds work for real (with demo dollars). Only the game and its protection are
+            simulated. Real games show up here on their own as soon as Gemini has prices.
           </div>
         </div>
       ) : null}
@@ -304,7 +304,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
           .
         </div>
         <div className="mt-2 text-xs text-muted">
-          Same cost whether {game.team} wins or loses. If {game.team} wins, refunds are covered by us — not you.
+          Only orders through your promo page. Same cost whether {game.team} wins or loses, and if {game.team} wins, the refunds are paid by us, not you.
         </div>
         {tooExpensive ? <div className="mt-2 text-sm text-warn">This game is a near-sure win, so “{offerText(pct).toLowerCase()}” is expensive. Try a smaller offer or another game.</div> : null}
       </div>

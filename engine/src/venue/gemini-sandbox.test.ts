@@ -68,3 +68,17 @@ test('IOC results: full fill, partial (fractional floored), nothing', () => {
   const none = toOrderResult(order({}), 'c');
   assert.deepEqual([none.state, none.filledContracts, none.avgPriceMicros], ['rejected', 0, 0n]);
 });
+
+test('a momentary gap in asks reuses the last real quote; a closed market does not', async () => {
+  let contract: unknown = { status: 'active', marketState: 'open', priceIncrement: '0.01', prices: { bestAsk: '0.23', bestBid: '0.03' } };
+  const fakeMarket = { getContract: async () => contract } as unknown as GeminiPublic;
+  const g = new GeminiSandbox({ ...opts, market: fakeMarket, baseUrl: 'https://api.sandbox.gemini.com' });
+  assert.equal((await g.quote('GEMI-X')).askMicros, 230_000n);
+  contract = { status: 'active', marketState: 'open', prices: {} }; // market maker re-posting: no asks for a moment
+  assert.equal((await g.quote('GEMI-X')).askMicros, 230_000n, 'grace window keeps the last real ask');
+  contract = null; // event fetch failed
+  assert.equal((await g.quote('GEMI-X')).askMicros, 230_000n, 'transport blip also uses the grace window');
+  contract = { status: 'settled', prices: {} };
+  assert.equal((await g.quote('GEMI-X')).askMicros, null, 'a closed market is never quoted');
+  assert.equal((await g.quote('GEMI-NEVER-SEEN')).askMicros, null, 'no history → no quote');
+});

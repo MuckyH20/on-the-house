@@ -240,7 +240,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     else if (hedger.pausedByHedger(c.address)) reason = 'This promo is paused for a moment.';
     else if (c.status === 'paused') reason = 'This promo is paused.';
     else if (closesSoon(await marketFor(c.marketSymbol))) reason = 'Sales for this promo have closed.';
-    else if (q.askMicros === null) reason = 'This promo is not available right now.';
+    else if (q.askMicros === null) reason = 'Refund protection is refreshing — try again in a minute.';
     else if (q.askMicros > maxPrice) reason = 'This promo is paused for a moment.';
     const quote: Quote = {
       campaign: c.address,

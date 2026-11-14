@@ -3,6 +3,9 @@ import { GEMINI_SANDBOX_HOST, microsToPrice, priceToMicros } from '@oth/shared';
 import type { GeminiPublic } from './gemini-public';
 import type { MarketQuote, OrderResult, Venue } from './types';
 
+/** How long a missing ask on an open market falls back to the last real one. */
+const QUOTE_GRACE_MS = 60_000;
+
 /**
  * Gemini Prediction Markets trading client — SANDBOX ONLY.
  * Docs: docs/research/gemini/{authentication-api-key.md, trading-quickstart.md, order-lifecycle.md, prediction-markets.yaml}.
@@ -186,17 +189,31 @@ export class GeminiSandbox implements Venue {
 
   // ---- Venue ----
 
+  /** Last real quote per symbol, to ride out momentary gaps while the sandbox market maker re-posts its orders. */
+  private lastQuote = new Map<string, { at: number; q: MarketQuote }>();
+
   async quote(symbol: string): Promise<MarketQuote> {
-    const c = await this.o.market.getContract(symbol);
+    const c = await this.o.market.getContract(symbol).catch(() => null);
     const ask = c?.prices?.bestAsk ?? c?.prices?.buy?.yes ?? null;
     const bid = c?.prices?.bestBid ?? c?.prices?.sell?.yes ?? null;
     const open = c?.status === 'active' && (c.marketState ?? 'open') === 'open';
-    return {
+    const q: MarketQuote = {
       symbol,
       askMicros: open && ask ? priceToMicros(ask) : null,
       bidMicros: open && bid ? priceToMicros(bid) : null,
       tickMicros: c?.priceIncrement ? priceToMicros(c.priceIncrement) : 10_000n,
     };
+    if (q.askMicros !== null) {
+      this.lastQuote.set(symbol, { at: Date.now(), q });
+      return q;
+    }
+    // A closed/settled market is final. A missing ask on an open (or unreachable) market is usually a blip:
+    // reuse the last real ask for a short grace window. Safe: the buy is still a limit IOC capped by the promo's
+    // max price, and anything not yet bought is bounded on-chain by max_unhedged until the hedger retries.
+    const closed = c !== null && !open;
+    const last = this.lastQuote.get(symbol);
+    if (!closed && last && Date.now() - last.at < QUOTE_GRACE_MS) return last.q;
+    return q;
   }
 
   async buyYes(p: { symbol: string; contracts: number; limitPriceMicros: bigint; clientOrderId: string }): Promise<OrderResult> {

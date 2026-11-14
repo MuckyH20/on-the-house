@@ -133,6 +133,7 @@ export function friendlyTxError(msg: string): string {
   if (/UnhedgedLimitExceeded|0x1780/.test(msg)) return 'Lots of orders right now — please try again in a few seconds.';
   if (/PremiumTooHigh|0x177d/.test(msg)) return 'Prices just moved. Please try again.';
   if (/insufficient funds|0x1\b/.test(msg)) return 'Not enough balance. Tap "Add $20 (demo)" first.';
+  if (/can.t pay itself|0x7f8|DuplicateMutable/i.test(msg)) return 'A shop can’t pay itself — this order will be paid from this device instead. Try again.';
   return 'Payment failed. Please try again.';
 }
 

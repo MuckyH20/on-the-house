@@ -49,6 +49,7 @@ export async function POST(req: Request, { params }: Ctx) {
     const { connection, program, operator, usdcMint, treasury } = await serverCtx();
     const c = await fetchCampaign(program, campaignKey);
     if (!c) throw new HttpError(404, 'campaign not found');
+    if (c.merchant === customer.toBase58()) throw new HttpError(400, 'A shop can’t pay itself — use another account or this device.');
 
     const quote = await engineFetch<Quote>(`/quote/${c.address}?amount=${amount}`);
     if (!quote.available || !quote.premium) throw new HttpError(409, quote.reason ?? 'This promo is not available right now.');

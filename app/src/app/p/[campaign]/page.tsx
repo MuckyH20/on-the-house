@@ -28,7 +28,10 @@ export default function PromoPage() {
   const burner = useBurner();
   const account = useOwner();
   // Signed-in customers pay from their own account wallet (rewards follow them); otherwise this device's wallet.
-  const usingAccount = account.authenticated && !!account.address && !!account.signTransaction;
+  // The shop's own account can't buy from its own promo (it would pay itself), so owners testing use the device wallet.
+  const [merchantOfPromo, setMerchantOfPromo] = useState<string | null>(null);
+  const isShopAccount = !!account.address && account.address === merchantOfPromo;
+  const usingAccount = account.authenticated && !!account.address && !!account.signTransaction && !isShopAccount;
   const payer = usingAccount ? account.address : (burner?.publicKey.toBase58() ?? null);
   const [shop, setShop] = useState<Pick<ShopProfile, 'name' | 'items'> | null>(null);
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -40,6 +43,9 @@ export default function PromoPage() {
 
   const state = usePoll(() => engine<CampaignState>(`/campaigns/${campaign}/state`), 5_000, [campaign]);
   const c = state.data?.campaign;
+  useEffect(() => {
+    if (c?.merchant) setMerchantOfPromo(c.merchant);
+  }, [c?.merchant]);
   const items: ShopItem[] = shop?.items ?? [];
   const total = items.reduce((s, m) => s + BigInt(m.price) * BigInt(cart[m.id] ?? 0), 0n);
   const summary = items.filter((m) => cart[m.id]).map((m) => `${cart[m.id]}× ${m.name}`).join(', ');
@@ -186,7 +192,11 @@ export default function PromoPage() {
           <button onClick={() => void addFunds()} disabled={busy !== null} className="text-brand underline disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
         </div>
         {balance !== null && total > 0n && balance < total ? <div className="text-sm text-warn">Not enough balance — tap “Add $20 (demo)” first.</div> : null}
-        {privyEnabled() ? (
+        {privyEnabled() && isShopAccount ? (
+          <div className="rounded-lg bg-paper px-3 py-2 text-xs text-muted">
+            You’re signed in as this shop, so this test order is paid from this device.
+          </div>
+        ) : privyEnabled() ? (
           usingAccount ? (
             <div className="flex items-center justify-between rounded-lg bg-good-soft px-3 py-2 text-xs text-good">
               <span>Rewards save to your account{account.label ? ` (${account.label})` : ''}</span>

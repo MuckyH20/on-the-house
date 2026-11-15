@@ -77,9 +77,16 @@ on devnet) handles the money:
 - Gemini's own result decides the outcome, so the refund and the hedge always agree.
 
 **QuickNode Streams** — how the engine hears about sales:
-- A stream on Solana devnet filtered down to our program ([filter](engine/quicknode/filter.js)) pushes each sale to the
-  engine's webhook within a second. Every delivery is signature-checked.
-- Speed matters: the engine has to cover each sale before the shop's risk limit fills up.
+- **Network:** `solana-devnet`. **Dataset:** `programs_with_logs` (each transaction with the programs it invoked and its
+  log lines, which is where our program's events live).
+- **Filter** ([engine/quicknode/filter.js](engine/quicknode/filter.js)): keeps only successful transactions that invoked
+  our program, trimmed to signature, slot, time and logs. Blocks with none of ours deliver nothing.
+- **Destination:** a webhook, `POST /webhooks/quicknode` on the engine. Every delivery is checked against QuickNode's
+  HMAC signature, timestamp and nonce before it's used. `pnpm stream on` creates the stream (see
+  [scripts/src/create-stream.ts](scripts/src/create-stream.ts)).
+- **Why:** speed. The engine has to cover each sale on Gemini before the shop's risk limit fills up, so it needs every
+  sale pushed within a second rather than polling for it. A slower background re-check of the chain catches anything
+  missed.
 
 ## The honest part (risks)
 

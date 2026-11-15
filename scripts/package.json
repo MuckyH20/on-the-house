@@ -14,7 +14,8 @@
     "demo:sandbox": "tsx src/demo-sandbox.ts",
     "gemini:probe": "tsx src/gemini-probe.ts",
     "stream": "tsx src/create-stream.ts",
-    "smoke:owner": "tsx src/smoke-owner.ts"
+    "smoke:owner": "tsx src/smoke-owner.ts",
+    "proof": "tsx src/proof.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",

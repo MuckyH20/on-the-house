@@ -145,6 +145,8 @@ Handy commands:
 - `pnpm demo:e2e` — runs a full YES and NO promo on devnet
 - `pnpm smoke:owner` — a shop owner signs their own shop and promo (the Privy path)
 - `pnpm verify:orders <order id>` — checks a hedge against Gemini's own records
+- `pnpm proof` — a live proof run: a real Gemini-protected promo plus a full game night (sale → protection → win →
+  automatic refund), printing the Solana Explorer and Gemini link for every step and the code that does it
 - `pnpm stream on` / `pnpm stream off` — start or stop the QuickNode stream
 - `pnpm test` — unit tests · `pnpm program:test` — Solana program tests
 

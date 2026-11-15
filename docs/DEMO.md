@@ -61,6 +61,8 @@ result and payout; if the team won, the judge's phone shows *You got $X back* on
 ## After the demo
 
 - `pnpm stream off` (stops QuickNode billing).
+- `pnpm proof` for a judge who wants to see it all work: about two minutes, one Explorer link per step, and a report
+  saved to `docs/local/proof/`.
 - `pnpm verify:orders <promo or Gemini order id>` if a judge asks for proof: it matches every hedge against Gemini's
   order history, checks the Solana record stores sha256 of that Gemini order id, and shows Gemini's settlement.
   Works before and after the game settles.

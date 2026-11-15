@@ -24,6 +24,7 @@
     "gemini:probe": "pnpm --filter @oth/scripts gemini:probe",
     "stream": "pnpm --filter @oth/scripts stream",
     "verify:orders": "pnpm --filter @oth/engine verify:orders",
-    "smoke:owner": "pnpm --filter @oth/scripts smoke:owner"
+    "smoke:owner": "pnpm --filter @oth/scripts smoke:owner",
+    "proof": "pnpm --filter @oth/scripts proof"
   }
 }

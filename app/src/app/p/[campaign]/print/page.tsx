@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Printer } from 'lucide-react';
+import { CircleDollarSign, Printer, ScanLine, Trophy } from 'lucide-react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
 import { Mark } from '@/components/Brand';
 import { Qr } from '@/components/Qr';
@@ -65,9 +65,22 @@ export default function PrintPage() {
           </div>
 
           <p className="poster-scan">Scan to order</p>
-          <p className="poster-note">
-            Pay the normal price. If {game.team} wins, your money comes back to your phone automatically. No app needed.
-          </p>
+
+          {/* Three steps a customer reads in two seconds */}
+          <ol className="poster-steps">
+            {[
+              { Icon: ScanLine, title: 'Scan', body: 'Point your phone camera at the code' },
+              { Icon: CircleDollarSign, title: 'Order & pay', body: 'Normal price, right on your phone' },
+              { Icon: Trophy, title: `${game.team} win${game.team.startsWith('the ') ? '' : 's'}?`, body: 'Your money comes back automatically' },
+            ].map(({ Icon, title, body }, i) => (
+              <li key={i} className="poster-step">
+                <span className="poster-step-n">{i + 1}</span>
+                <Icon className="poster-step-icon" aria-hidden="true" />
+                <span className="poster-step-title">{title}</span>
+                <span className="poster-step-body">{body}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <footer className="poster-foot">

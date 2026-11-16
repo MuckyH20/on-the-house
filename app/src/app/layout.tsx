@@ -45,9 +45,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${shoulders.variable} ${schibsted.variable}`} suppressHydrationWarning>
       <body className="flex min-h-dvh flex-col">
-        {/* Before first paint: mark JS as running (scroll reveals only hide content then), play the intro once per visit, and hold it for a tap in kick-off mode (/?kickoff). */}
+        {/* Before first paint: mark JS as running (scroll reveals only hide content then). First ever visit (or /?kickoff): an entrance screen that plays the intro with sound on a tap. After that: no intro. */}
         <Script id="motion-flags" strategy="beforeInteractive">
-          {`try{var d=document.documentElement;d.classList.add('js');if(/[?&]kickoff/.test(location.search))d.setAttribute('data-kickoff','');else if(sessionStorage.getItem('oth-intro'))d.setAttribute('data-intro-seen','');else sessionStorage.setItem('oth-intro','1')}catch(e){document.documentElement.setAttribute('data-intro-seen','')}`}
+          {`try{var d=document.documentElement;d.classList.add('js');if(/[?&]kickoff/.test(location.search)||!localStorage.getItem('oth-entered'))d.setAttribute('data-kickoff','');else d.setAttribute('data-intro-seen','')}catch(e){document.documentElement.setAttribute('data-intro-seen','')}`}
         </Script>
         <Intro />
         <SoundUnlock />

@@ -97,6 +97,7 @@
 }
 @keyframes intro-word { from { opacity: 0; transform: translateY(16px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes intro-exit { to { clip-path: inset(0 0 100% 0); visibility: hidden; } }
+@keyframes ghost { 0%, 100% { opacity: 0.14; } 50% { opacity: 0.32; } }
 @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
 @keyframes board-in { from { opacity: 0; transform: translateX(48px) rotate(1.5deg); } to { opacity: 1; transform: none; } }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
@@ -332,6 +333,9 @@
   }
   html[data-kickoff] .intro:not([data-run]), html[data-kickoff] .intro:not([data-run]) * { animation-play-state: paused; }
   html[data-kickoff]:not([data-kickoff-run]) .landing :is(.enter, .enter-board) { animation-play-state: paused; }
+  .intro-ghost { display: none; }
+  html[data-kickoff] .intro:not([data-run]) .intro-ghost { display: inline; animation: ghost 2.4s ease-in-out infinite !important; }
+  html[data-kickoff] .intro:not([data-run]) .intro-kickoff { gap: 0.5rem; }
   .intro-roof { stroke-dasharray: 70; stroke-dashoffset: 70; animation: intro-roof 0.6s var(--ease-out) 0.1s forwards; }
   .intro-ball { transform-box: fill-box; transform-origin: center; animation: intro-ball 0.75s cubic-bezier(0.3, 1.2, 0.5, 1) 0.45s both; }
   .intro-word { animation: intro-word 0.55s var(--ease-out) 0.85s both; }
@@ -374,6 +378,7 @@
   .check-draw { stroke-dashoffset: 0; }
   .confetti-bit { display: none; }
   .intro, .ribbon-toggle { display: none; }
+  .enter, .enter-board { animation: none !important; } /* never wait on an entrance that isn't shown */
   .ribbon-track { animation: none; }
   .js .reveal, .js .reveal-stagger > *, .js .print-in { opacity: 1; transform: none; clip-path: none; }
   .js .clock-line .clock-step::before { transform: none; }

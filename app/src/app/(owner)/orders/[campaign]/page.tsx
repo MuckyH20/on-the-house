@@ -9,6 +9,7 @@ import { TeamMark } from '@/components/GameCard';
 import { CheckCheck, ReceiptText } from 'lucide-react';
 import { playDing } from '@/lib/sound';
 import { Badge, Button, ButtonLink, EmptyState, Notice, Skeleton } from '@/components/ui';
+import { BackLink } from '@/components/BackLink';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
@@ -52,6 +53,7 @@ export default function OrdersPage() {
   if (owner.mode === 'privy' && !owner.authenticated) {
     return (
       <div className="mx-auto max-w-[480px]">
+        <BackLink href="/dashboard" className="mb-3" />
         <div className="card p-8 text-center">
           <h1 className="t-h1">Orders</h1>
           <p className="t-body mt-2 text-muted">Sign in as the shop to manage orders.</p>
@@ -65,6 +67,7 @@ export default function OrdersPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
+          <BackLink href="/dashboard" label="My promos" className="mb-2" />
           <h1 className="t-h1">Orders</h1>
           {game ? (
             <div className="mt-2 flex items-center gap-2 text-sm text-muted">

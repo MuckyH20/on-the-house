@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Big_Shoulders, Schibsted_Grotesk } from 'next/font/google';
 import Script from 'next/script';
+import { NavTrail } from '@/components/BackLink';
 import { Intro } from '@/components/Intro';
 import { SoundUnlock } from '@/components/Sound';
 import { SiteFooter, SiteHeader } from '@/components/SiteHeader';
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
         <Intro />
         <SoundUnlock />
+        <NavTrail />
         <SiteHeader />
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6 sm:px-8 sm:py-10">{children}</main>
         <SiteFooter />

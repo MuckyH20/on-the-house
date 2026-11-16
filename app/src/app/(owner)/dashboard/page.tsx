@@ -7,6 +7,7 @@ import { TeamMark } from '@/components/GameCard';
 import { Megaphone, Plus, Trophy } from 'lucide-react';
 import { playHorn } from '@/lib/sound';
 import { Badge, Button, ButtonLink, CampaignStatus, EmptyState, Notice, PageSkeleton, Skeleton, Stat } from '@/components/ui';
+import { BackLink } from '@/components/BackLink';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { useOwner } from '@/lib/owner';
@@ -41,6 +42,7 @@ export default function DashboardPage() {
   if (owner.mode === 'privy' && !owner.authenticated) {
     return (
       <div className="mx-auto max-w-[480px]">
+        <BackLink href="/" className="mb-3" />
         <div className="card p-8 text-center">
           <h1 className="t-h1">My promos</h1>
           <p className="t-body mt-2 text-muted">Sign in to see and manage your promos.</p>
@@ -64,6 +66,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
+          <BackLink href="/" className="mb-2" />
           <h1 className="t-h1">My promos</h1>
           {owner.label ? (
             <div className="mt-1.5 flex items-center gap-3 text-sm text-muted">

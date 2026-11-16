@@ -8,7 +8,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit --incremental false",
     "test": "echo \"(app is covered by pnpm demo:e2e and manual click-through)\""
   },
   "dependencies": {

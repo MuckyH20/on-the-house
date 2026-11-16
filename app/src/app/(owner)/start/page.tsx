@@ -12,6 +12,7 @@ import { Qr } from '@/components/Qr';
 import { engine } from '@/lib/client';
 import { customerOffer, gameFor, startsIn, type Game } from '@/lib/game';
 import { useOwner } from '@/lib/owner';
+import { BackLink } from '@/components/BackLink';
 import {
   cents,
   costBps,
@@ -59,7 +60,7 @@ export default function StartPage() {
 
   if (owner.mode === 'privy' && !owner.authenticated) {
     return (
-      <Shell step={1}>
+      <Shell step={1} back={<BackLink href="/" />}>
         <h1 className="t-h1">Start your promo</h1>
         <p className="t-body mt-2 text-muted">Three quick steps, about two minutes. No crypto, no passwords: just your email or Google.</p>
         <ol className="mt-5 space-y-2.5">
@@ -80,7 +81,7 @@ export default function StartPage() {
 
   if (step === 'shop') {
     return (
-      <Shell step={1} aside={<CustomerPreview shopName={name} items={items} />}>
+      <Shell step={1} back={<BackLink href="/" />} aside={<CustomerPreview shopName={name} items={items} />}>
         <h1 className="t-h1">Your shop</h1>
         <p className="t-body mt-2 text-muted">Your name and menu, as customers will see them on your promo page.</p>
         <div className="mt-6">
@@ -174,10 +175,11 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
   const costOnTypical = typical && cost !== null ? (BigInt(typical.price) * BigInt(cost)) / 10_000n : null;
   const tooExpensive = cost !== null && cost > 9_000;
 
-  if (marketError) return <Shell step={2}><Notice tone="error">We couldn’t load today’s games. Please refresh in a moment.</Notice></Shell>;
+  const back = <BackLink onClick={onEditShop} label="Your shop" />;
+  if (marketError) return <Shell step={2} back={back}><Notice tone="error">We couldn’t load today’s games. Please refresh in a moment.</Notice></Shell>;
   if (!markets)
     return (
-      <Shell step={2}>
+      <Shell step={2} back={back}>
         <Skeleton className="h-8 w-1/2" />
         <Skeleton className="mt-6 h-44 w-full rounded-2xl" />
         <Skeleton className="mt-4 h-11 w-full" />
@@ -186,7 +188,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
     );
   if (!market || !game) {
     return (
-      <Shell step={2}>
+      <Shell step={2} back={back}>
         <EmptyState
           icon={Hourglass}
           title="No games open right now"
@@ -226,7 +228,7 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
 
   const preview = <CustomerPreview shopName={shopName} items={items} game={game} offer={customerOffer(pct)} chance={market.yesAsk ? Number(market.yesAsk) : null} />;
   return (
-    <Shell step={2} aside={preview}>
+    <Shell step={2} back={back} aside={preview}>
       <div className="flex items-start justify-between gap-3">
         <h1 className="t-h1">Your promo</h1>
         <button onClick={onEditShop} className="btn btn-ghost btn-sm -mr-2 -mt-1 max-w-[55%]">
@@ -356,7 +358,7 @@ function LiveStep({ campaign, shopName }: { campaign: string; shopName: string }
   const link = `${origin}/p/${campaign}`;
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
   return (
-    <Shell step={3}>
+    <Shell step={3} back={<BackLink href="/dashboard" label="My promos" />}>
       <div className="text-center">
         <SuccessBurst />
         <h1 className="t-h1 mt-5">You’re live!</h1>
@@ -478,9 +480,10 @@ function PriceInput({ price, label, onPrice }: { price: string; label: string; o
 const STEP_NAMES = ['Your shop', 'Game & offer', 'You’re live'];
 const STEP_HINTS = ['name and menu', 'we suggest one, you see the cost', 'a QR sign for your counter'];
 
-function Shell({ step, children, aside }: { step: 1 | 2 | 3; children: ReactNode; aside?: ReactNode }) {
+function Shell({ step, children, aside, back }: { step: 1 | 2 | 3; children: ReactNode; aside?: ReactNode; back?: ReactNode }) {
   return (
     <div className={`mx-auto pb-6 ${aside ? 'max-w-5xl' : 'max-w-[480px]'}`}>
+      {back ? <div className="mb-3">{back}</div> : null}
       <div className={`mb-6 ${aside ? 'max-w-[480px] lg:max-w-none' : ''}`}>
         <div className="flex items-center gap-2" role="progressbar" aria-valuemin={1} aria-valuemax={3} aria-valuenow={step} aria-label={`Step ${step} of 3: ${STEP_NAMES[step - 1]}`}>
           {[1, 2, 3].map((s) => (

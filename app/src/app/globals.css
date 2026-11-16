@@ -197,6 +197,17 @@
   .link:hover { text-decoration: underline; color: var(--color-brand-strong); }
   .link-muted { color: var(--color-muted); text-decoration: underline; }
   .link-muted:hover { color: var(--color-ink); }
+  /* Back: a quiet pill above the page title; generous tap target on phones. */
+  .back-link {
+    display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2.5rem;
+    margin-left: -0.5rem; padding: 0 0.75rem 0 0.5rem; border-radius: 999px;
+    font-size: 0.875rem; font-weight: 700; color: var(--color-muted);
+    transition: color 150ms, background-color 150ms;
+  }
+  .back-link:hover { color: var(--color-ink); background: color-mix(in oklab, var(--color-ink) 6%, transparent); }
+  .back-link:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
+  .back-link svg { transition: transform 150ms; }
+  .back-link:hover svg { transform: translateX(-2px); }
 
   /* Inputs */
   .field-label { display: block; font-size: 0.9375rem; font-weight: 700; color: var(--color-ink); margin-bottom: 0.375rem; }

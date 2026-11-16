@@ -7,6 +7,7 @@ import type { WalletClaim } from '@oth/shared/api';
 import { Ticket, Trophy } from 'lucide-react';
 import { playHorn } from '@/lib/sound';
 import { Button, Card, EmptyState, Pill, Simulated, Skeleton } from '@/components/ui';
+import { BackLink } from '@/components/BackLink';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
@@ -46,6 +47,7 @@ export default function MePage() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       <header>
+        <BackLink href="/" className="mb-2" />
         <h1 className="t-h1">My rewards</h1>
         <p className="t-small mt-2 text-muted">Your game-day orders, and what came back.</p>
       </header>

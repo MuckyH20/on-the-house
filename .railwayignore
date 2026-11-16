@@ -10,3 +10,4 @@ target/
 node_modules/
 **/node_modules/
 app/.next/
+engine-export*.json

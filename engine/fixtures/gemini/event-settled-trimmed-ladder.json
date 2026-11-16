@@ -1,0 +1,94 @@
+{
+  "id": "254097",
+  "title": "BTC price on November 10",
+  "ticker": "BTC2611102200",
+  "type": "categorical",
+  "category": "Crypto",
+  "status": "settled",
+  "expiryDate": "2026-11-10T22:00:00.000Z",
+  "resolvedAt": "2026-11-10T22:00:07.327Z",
+  "template": "prices-ladder",
+  "settlement": {
+    "value": "73759.18533333333"
+  },
+  "contracts": [
+    {
+      "id": "254097-374039",
+      "label": "$74,000 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI74000",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:06.203Z",
+      "strike": {
+        "type": "above",
+        "value": "74000"
+      }
+    },
+    {
+      "id": "254097-374041",
+      "label": "$74,250 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI74250",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:06.235Z",
+      "strike": {
+        "type": "above",
+        "value": "74250"
+      }
+    },
+    {
+      "id": "254097-374043",
+      "label": "$74,500 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI74500",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:06.529Z",
+      "strike": {
+        "type": "above",
+        "value": "74500"
+      }
+    },
+    {
+      "id": "254097-374045",
+      "label": "$74,750 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI74750",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:07.225Z",
+      "strike": {
+        "type": "above",
+        "value": "74750"
+      }
+    },
+    {
+      "id": "254097-374047",
+      "label": "$75,000 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI75000",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:07.327Z",
+      "strike": {
+        "type": "above",
+        "value": "75000"
+      }
+    },
+    {
+      "id": "254097-374049",
+      "label": "$75,250 or above",
+      "status": "settled",
+      "instrumentSymbol": "GEMI-BTC2611102200-HI75250",
+      "expiryDate": "2026-11-10T22:00:00.000Z",
+      "resolutionSide": "no",
+      "resolvedAt": "2026-11-10T22:00:06.902Z",
+      "strike": {
+        "type": "above",
+        "value": "75250"
+      }
+    }
+  ]
+}

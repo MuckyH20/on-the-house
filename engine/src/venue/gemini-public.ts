@@ -20,6 +20,8 @@ export interface GeminiContract {
   resolutionSide?: 'yes' | 'no' | null;
   resolvedAt?: string | null;
   marketState?: string;
+  /** Price-ladder contracts: "$74,000 or above" → { type: 'above', value: '74000' }. */
+  strike?: { type?: string; value?: string } | null;
   priceIncrement?: string;
   priceMinimum?: string;
   quantityIncrement?: string;
@@ -42,6 +44,10 @@ export interface GeminiEvent {
   status: GeminiMarketStatus;
   expiryDate: string | null;
   resolvedAt?: string | null;
+  /** e.g. 'prices-ladder' for "BTC price at 5pm" events. */
+  template?: string;
+  /** The official settlement value once settled (ladder events), e.g. { value: '73759.18' }. */
+  settlement?: { value?: string } | null;
   contracts: GeminiContract[];
 }
 interface EventsResponse {
@@ -136,8 +142,38 @@ export class GeminiPublic implements MarketSource {
 
   async resolution(symbol: string): Promise<Resolution> {
     const m = await this.getMarket(symbol);
-    return m?.status === 'resolved' && m.outcome ? { resolved: true, outcome: m.outcome } : { resolved: false };
+    if (m) return m.status === 'resolved' && m.outcome ? { resolved: true, outcome: m.outcome } : { resolved: false };
+    // Not listed any more? Once a price-ladder event settles, Gemini trims its contract list to a few strikes, so
+    // our contract can vanish. Its result still follows from the event's official settlement value.
+    if (!symbol.startsWith('GEMI-')) return { resolved: false };
+    for (const t of this.candidateTickers(symbol)) {
+      const ev = await this.getEvent(t);
+      if (!ev) continue;
+      const outcome = ladderOutcome(ev, symbol);
+      return outcome ? { resolved: true, outcome } : { resolved: false };
+    }
+    return { resolved: false };
   }
+}
+
+/**
+ * The result of a "$X or above" ladder contract that a settled event no longer lists, from the event's settlement
+ * value. Only answers when the event is settled, the symbol is an "above" strike of this event, and the same rule
+ * (settlement ≥ strike → yes) agrees with every contract Gemini still lists. Otherwise null (keep waiting).
+ */
+export function ladderOutcome(ev: GeminiEvent, symbol: string): 'yes' | 'no' | null {
+  if (ev.status !== 'settled' || ev.template !== 'prices-ladder') return null;
+  const settled = Number(ev.settlement?.value);
+  const m = symbol.match(/^GEMI-(.+)-HI(\d+(?:\.\d+)?)$/);
+  if (!m || m[1] !== ev.ticker || !Number.isFinite(settled)) return null;
+  const rule = (strike: number) => (settled >= strike ? 'yes' : 'no');
+  const checks = ev.contracts.filter((c) => c.strike?.type === 'above' && c.resolutionSide);
+  if (!checks.length) return null;
+  for (const c of checks) {
+    const strike = Number(c.strike?.value);
+    if (!Number.isFinite(strike) || rule(strike) !== c.resolutionSide) return null;
+  }
+  return rule(Number(m[2]));
 }
 
 function mapStatus(s: GeminiMarketStatus, side: 'yes' | 'no' | null): MarketStatus {

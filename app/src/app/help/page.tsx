@@ -1,4 +1,5 @@
 import { ButtonLink } from '@/components/ui';
+import { BackLink } from '@/components/BackLink';
 
 export const metadata = { title: 'Help — On the House' };
 
@@ -115,6 +116,9 @@ export default function HelpPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-12 pb-6">
       <header className="text-center sm:text-left">
+        <div className="text-left">
+          <BackLink href="/" className="mb-2" />
+        </div>
         <h1 className="t-h1">Everything you need, in one minute.</h1>
         <p className="t-body mt-3 text-muted">A quick start, then answers to the questions shop owners ask most.</p>
       </header>

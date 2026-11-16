@@ -60,3 +60,7 @@ docs/research/
 # Vercel CLI link and pulled env
 .vercel
 .env.local
+
+# Engine data exports (pnpm db:export): shop and order data, keep local
+engine-export*.json
+engine/import.json

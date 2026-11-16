@@ -8,6 +8,9 @@ import type { OthEventName } from '@oth/shared/program';
  * Thin repository over SQLite (built-in `node:sqlite`, no native addon). Everything the engine persists goes
  * through this class, so swapping in Postgres means re-implementing these methods only.
  */
+const DUMP_TABLES = ['events', 'processed_signatures', 'fills', 'kv', 'shops', 'orders'] as const;
+export type DbDump = Record<(typeof DUMP_TABLES)[number], Row[]>;
+
 export class Repo {
   private readonly db: DatabaseSync;
 
@@ -156,6 +159,36 @@ export class Repo {
 
   ordersForCampaign(campaign: string): ShopOrder[] {
     return this.db.prepare(`SELECT data FROM orders WHERE campaign = ? ORDER BY created_at DESC`).all(campaign).map((r) => JSON.parse(String((r as { data: string }).data)) as ShopOrder);
+  }
+
+  // ---- backup / move to another host ----
+
+  /** Every row of every table, for `pnpm db:export` (moving the engine to a new host keeps shops, orders, fills). */
+  dump(): DbDump {
+    const out = {} as DbDump;
+    for (const t of DUMP_TABLES) out[t] = this.db.prepare(`SELECT * FROM ${t}`).all() as Row[];
+    return out;
+  }
+
+  /** Adds a dump's rows that aren't here yet (never overwrites: rows already here win). Returns rows added per table. */
+  merge(dump: Partial<DbDump>): Record<string, number> {
+    const added: Record<string, number> = {};
+    this.db.exec('BEGIN');
+    try {
+      for (const t of DUMP_TABLES) {
+        const rows = dump[t] ?? [];
+        const cols = (this.db.prepare(`PRAGMA table_info(${t})`).all() as { name: string }[]).map((c) => c.name);
+        const ins = this.db.prepare(`INSERT OR IGNORE INTO ${t} (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`);
+        let n = 0;
+        for (const r of rows) n += Number(ins.run(...cols.map((c) => (r[c] ?? null) as string | number | null)).changes);
+        added[t] = n;
+      }
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
+    }
+    return added;
   }
 
   close(): void {

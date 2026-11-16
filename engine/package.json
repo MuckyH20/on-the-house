@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "tsx --test \"src/**/*.test.ts\"",
     "sandbox:test": "tsx src/tools/sandbox-order-test.ts",
-    "verify:orders": "tsx src/tools/verify-orders.ts"
+    "verify:orders": "tsx src/tools/verify-orders.ts",
+    "db:export": "tsx src/tools/export-db.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",

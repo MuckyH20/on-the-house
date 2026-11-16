@@ -1,7 +1,9 @@
-import pino from 'pino';
+import { existsSync, readFileSync, renameSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import pino, { type Logger } from 'pino';
 import { resolveFromRoot } from '@oth/shared/node';
 import { priceToMicros } from '@oth/shared';
-import { Repo } from './db';
+import { Repo, type DbDump } from './db';
 import { loadEngineEnv } from './env';
 import { Hedger } from './hedger';
 import { Ingest } from './ingest';
@@ -62,6 +64,7 @@ async function main() {
   log.info({ gemini: env.GEMINI_MODE, resolution: env.RESOLUTION_SOURCE, marketList: new URL(listSource === sandboxPublic ? env.GEMINI_SANDBOX_BASE_URL : env.GEMINI_PUBLIC_BASE_URL).host }, 'venue configured');
 
   const repo = new Repo(resolveFromRoot(env.DATABASE_PATH));
+  importDump(repo, resolveFromRoot(env.DATABASE_PATH), log);
   const registry = new Registry(chain);
   log.info({ campaigns: await registry.loadAll() }, 'campaigns loaded');
 
@@ -118,3 +121,22 @@ main().catch((e) => {
   console.error(`engine failed to start: ${(e as Error).message}`);
   process.exit(1);
 });
+
+/**
+ * Moving hosts: an `import.json` from `pnpm db:export`, placed next to the database (or shipped as
+ * `engine/import.json`), is merged before any work starts. Rows already in the database win, so a repeat is
+ * harmless; the copy next to the database is renamed afterwards so it only runs once.
+ */
+function importDump(repo: Repo, dbPath: string, log: Logger): void {
+  if (dbPath === ':memory:') return;
+  for (const file of [join(dirname(dbPath), 'import.json'), resolveFromRoot('engine/import.json')]) {
+    if (!existsSync(file)) continue;
+    try {
+      const added = repo.merge(JSON.parse(readFileSync(file, 'utf8')) as Partial<DbDump>);
+      log.info({ file, added }, 'imported data');
+      if (file.startsWith(dirname(dbPath))) renameSync(file, join(dirname(dbPath), `imported-${Date.now()}.json`));
+    } catch (e) {
+      log.error({ file, err: (e as Error).message }, 'import file could not be imported');
+    }
+  }
+}

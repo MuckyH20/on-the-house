@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { CircleDollarSign, Printer, ScanLine, Trophy } from 'lucide-react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
+import { BackLink } from '@/components/BackLink';
 import { Mark } from '@/components/Brand';
 import { Qr } from '@/components/Qr';
 import { Button, PageSkeleton } from '@/components/ui';
@@ -74,6 +75,7 @@ export default function PrintPage() {
 
   return (
     <div className="poster-wrap flex flex-col items-center gap-5 py-2" data-print-image={printImage ? '' : undefined}>
+      <BackLink href="/dashboard" label="My promos" className="self-start" />
       {printImage ? <img src={printImage} alt="" className="poster-print-img" /> : null}
       <div className="poster" ref={posterRef}>
         {/* Floodlit band: the offer */}

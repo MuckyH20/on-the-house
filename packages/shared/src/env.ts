@@ -128,8 +128,10 @@ export const appServerEnvSchema = z.object({
   PLATFORM_MARGIN_BPS: withDefault(bps, 1000),
   /** Demo dollars handed out per faucet call (whole dollars). */
   FAUCET_AMOUNT_USD: withDefault(z.coerce.number().int().min(1).max(1000), 20),
-  /** Minimum seconds between faucet calls for the same wallet. */
-  FAUCET_COOLDOWN_SECONDS: withDefault(z.coerce.number().int().min(0), 300),
+  /** Minimum seconds between faucet calls for the same wallet (just a double-tap guard). */
+  FAUCET_COOLDOWN_SECONDS: withDefault(z.coerce.number().int().min(0), 5),
+  /** The faucet stops topping up a wallet once it holds this much (whole dollars). */
+  FAUCET_MAX_BALANCE_USD: withDefault(z.coerce.number().int().min(1).max(10_000), 100),
 });
 export type AppServerEnv = z.infer<typeof appServerEnvSchema>;
 

@@ -5,6 +5,7 @@ import { formatBps, formatUsd, microsToPrice } from '@oth/shared';
 import type { CampaignState, StoredEvent } from '@oth/shared/api';
 import { SearchX } from 'lucide-react';
 import { Badge, CampaignStatus, CoverageBar, EmptyState, PageSkeleton, Simulated } from '@/components/ui';
+import { BackLink } from '@/components/BackLink';
 import { gameFor } from '@/lib/game';
 import { orderNumber } from '@/lib/order';
 import { short, useEngineStream } from '@/lib/client';
@@ -36,6 +37,7 @@ export default function ProofPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <header className="space-y-3">
+        <BackLink href={`/p/${campaign}`} className="-mb-1" />
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="t-h1">Protection details</h1>
           <CampaignStatus status={c.status} outcome={c.outcome} pausedByHedger={s.hedger.pausedByHedger} />

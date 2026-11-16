@@ -7,6 +7,7 @@ import { getAssociatedTokenAddressSync } from '@solana/spl-token';
 import { Keypair, PublicKey } from '@solana/web3.js';
 import { formatUsd } from '@oth/shared';
 import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
+import { BackLink } from '@/components/BackLink';
 import { GameCard } from '@/components/GameCard';
 import { Mark } from '@/components/Brand';
 import { SoundToggle } from '@/components/Sound';
@@ -76,6 +77,9 @@ export default function PromoPage() {
   const orderRefund = quote.data?.refund !== undefined ? BigInt(quote.data.refund) : null;
   const tooBig = total > 0n && maxOrderRefund !== null && orderRefund !== null && orderRefund > maxOrderRefund;
   const maxOrderAmount = c && maxOrderRefund !== null && c.refundBps > 0 ? (maxOrderRefund * 10_000n) / BigInt(c.refundBps) : null;
+  // What the demo-dollar button adds: enough for the cart (whole dollars), at least $20.
+  const short = balance !== null && total > balance ? total - balance : 0n;
+  const topUp = short > 20_000_000n ? ((short + 999_999n) / 1_000_000n) * 1_000_000n : 20_000_000n;
   const usdcMint = useRef<PublicKey | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -99,7 +103,7 @@ export default function PromoPage() {
     setBusy('faucet');
     setError(null);
     try {
-      await getJson('/api/faucet', { method: 'POST', body: JSON.stringify({ wallet: payer }) });
+      await getJson('/api/faucet', { method: 'POST', body: JSON.stringify({ wallet: payer, need: total.toString() }) });
       await refreshBalance();
     } catch (e) {
       setError((e as Error).message);
@@ -152,6 +156,8 @@ export default function PromoPage() {
 
   return (
     <div className="mx-auto max-w-md space-y-4 pb-6">
+      {/* Only when they came from inside the site (a QR scan has nothing to go back to). */}
+      <BackLink className="-mb-3" />
       <header className="pt-2 text-center">
         <h1 className="t-h1">{shop.name}</h1>
         <p className="mt-1.5 text-sm font-bold text-brand">Game-day promo</p>
@@ -214,9 +220,9 @@ export default function PromoPage() {
         </Button>
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted">Your balance: <span className="font-bold text-ink">{balance === null ? '…' : formatUsd(balance)}</span></span>
-          <button onClick={() => void addFunds()} disabled={busy !== null} className="link disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : 'Add $20 (demo)'}</button>
+          <button onClick={() => void addFunds()} disabled={busy !== null} className="link disabled:opacity-40">{busy === 'faucet' ? 'Adding…' : `Add ${formatUsd(topUp).replace(/\.00$/, '')} (demo)`}</button>
         </div>
-        {balance !== null && total > 0n && balance < total ? <Notice tone="caution">Not enough balance — tap “Add $20 (demo)” first.</Notice> : null}
+        {balance !== null && total > 0n && balance < total ? <Notice tone="caution">Not enough balance — tap “Add {formatUsd(topUp).replace(/\.00$/, '')} (demo)” first.</Notice> : null}
         {privyEnabled() && isShopAccount ? (
           <Notice tone="info">You’re signed in as this shop, so this test order is paid from this device.</Notice>
         ) : privyEnabled() ? (

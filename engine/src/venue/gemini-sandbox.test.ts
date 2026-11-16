@@ -82,3 +82,9 @@ test('a momentary gap in asks reuses the last real quote; a closed market does n
   assert.equal((await g.quote('GEMI-X')).askMicros, null, 'a closed market is never quoted');
   assert.equal((await g.quote('GEMI-NEVER-SEEN')).askMicros, null, 'no history → no quote');
 });
+
+test('a game with no sellers is not quoted, even though Gemini repeats the last trade as buy.yes', async () => {
+  const contract = { status: 'active', marketState: 'open', priceIncrement: '0.01', prices: { buy: { yes: '0.32' }, bestBid: '0.02', lastTradePrice: '0.32' } };
+  const g = new GeminiSandbox({ ...opts, market: { getContract: async () => contract } as unknown as GeminiPublic, baseUrl: 'https://api.sandbox.gemini.com' });
+  assert.equal((await g.quote('GEMI-NO-SELLERS')).askMicros, null);
+});

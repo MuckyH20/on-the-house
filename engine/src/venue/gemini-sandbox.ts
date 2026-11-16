@@ -200,7 +200,9 @@ export class GeminiSandbox implements Venue {
 
   async quote(symbol: string): Promise<MarketQuote> {
     const c = await this.o.market.getContract(symbol).catch(() => null);
-    const ask = c?.prices?.bestAsk ?? c?.prices?.buy?.yes ?? null;
+    // Only a real resting offer counts. With no sellers Gemini still reports buy.yes (= the last trade), which would
+    // make an unfillable game look tradable.
+    const ask = c?.prices?.bestAsk ?? null;
     const bid = c?.prices?.bestBid ?? c?.prices?.sell?.yes ?? null;
     const open = c?.status === 'active' && (c.marketState ?? 'open') === 'open';
     const q: MarketQuote = {

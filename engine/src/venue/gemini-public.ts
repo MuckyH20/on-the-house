@@ -154,7 +154,7 @@ export function toSummary(ev: GeminiEvent, c: GeminiContract): MarketSummary {
     title: single && c.label === ev.title ? ev.title : `${ev.title} — ${c.label}`,
     condition: plainCondition(ev, c),
     category: ev.category,
-    yesAsk: p.bestAsk ?? p.buy?.yes ?? null,
+    yesAsk: p.bestAsk ?? null, // buy.yes falls back to the last trade when nobody is selling
     yesBid: p.bestBid ?? p.sell?.yes ?? null,
     closesAt: c.expiryDate ?? ev.expiryDate,
     status: mapStatus(c.status, c.resolutionSide ?? null),

@@ -240,6 +240,13 @@
     background: var(--color-night-deep); color: var(--color-chalk); border-radius: 18px;
     box-shadow: var(--shadow-board), inset 0 0 0 1px rgb(242 240 233 / 0.09);
   }
+  /* Recommended zone under a range slider */
+  .range-band {
+    position: absolute; top: 50%; height: 10px; transform: translateY(-50%); border-radius: 999px;
+    background: color-mix(in oklab, var(--color-good) 22%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--color-good) 40%, transparent);
+    pointer-events: none;
+  }
   /* Kickoff: the closing call to action, a floodlit board with light spilling from the top corner. */
   .kickoff {
     position: relative; overflow: hidden; isolation: isolate; border-radius: 24px; color: var(--color-chalk);
@@ -292,13 +299,15 @@
 
   /* Match timeline (pre-game → game on → final whistle) */
   .clock-step { position: relative; padding-left: 1.75rem; }
-  .clock-step::before { content: ""; position: absolute; left: 0.3125rem; top: 0.5rem; bottom: -2rem; width: 2px; background: rgb(242 240 233 / 0.14); }
+  .clock-step::before { content: ""; position: absolute; left: 0.3125rem; top: 0.5rem; bottom: -2rem; width: 2px; background: rgb(242 240 233 / 0.22); }
   .clock-step:last-child::before { display: none; }
   .clock-dot { position: absolute; left: 0; top: 0.3125rem; width: 12px; height: 12px; border-radius: 999px; background: var(--color-night); box-shadow: inset 0 0 0 2px var(--color-floodlight); }
   .clock-step[data-final="true"] .clock-dot { background: var(--color-floodlight); }
   @media (min-width: 768px) {
     .clock-step { padding-left: 0; padding-top: 1.75rem; }
     .clock-step::before { left: 0.75rem; right: -2rem; top: 0.3125rem; bottom: auto; width: auto; height: 2px; }
+    /* After the final whistle the line runs on to the edge and fades out: the row reads as complete, with no 4th step. */
+    .clock-step:last-child::before { display: block; right: 0; background: linear-gradient(90deg, rgb(242 240 233 / 0.22), rgb(242 240 233 / 0)); }
     .clock-dot { top: 0; }
   }
 
@@ -412,7 +421,8 @@
   .poster :is(.poster-offer, .poster-matchup, .poster-scan, .poster-step-title, .poster-shop, .poster-brand) { padding-inline: 0.06em; }
   .poster-offer { font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 9.8cqw; line-height: 0.88; text-wrap: balance; }
   /* gap keeps a minimum space between blocks even on the shorter Letter sheet; extra height centres them. */
-  .poster-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4cqw; padding: 3cqw 7cqw 2.4cqw; text-align: center; }
+  .poster-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw; padding: 2.6cqw 7cqw 2.2cqw; text-align: center; }
+  .poster-foot { flex-shrink: 0; }
   .poster-board {
     display: flex; align-items: center; gap: 2.4cqw; max-width: 84cqw;
     background: var(--color-night-deep); color: var(--color-chalk); border-radius: 2.2cqw; padding: 1.8cqw 3.4cqw 1.8cqw 2cqw;

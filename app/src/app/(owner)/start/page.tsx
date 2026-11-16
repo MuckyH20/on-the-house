@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { formatUsd, parseUsd } from '@oth/shared';
 import type { MarketSummary, ShopItem } from '@oth/shared/api';
 import { GameCard, TeamMark } from '@/components/GameCard';
-import { Hourglass, MonitorSmartphone, Pencil, Plus, Printer, Smartphone, Trophy, X } from 'lucide-react';
+import { CircleCheck, Hourglass, MonitorSmartphone, TriangleAlert, Pencil, Plus, Printer, Smartphone, Trophy, X } from 'lucide-react';
 import { playWhistle } from '@/lib/sound';
 import { Badge, Button, ButtonLink, EmptyState, Field, Notice, PageSkeleton, Simulated, Skeleton, SuccessBurst } from '@/components/ui';
 import { Qr } from '@/components/Qr';
@@ -318,17 +318,11 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
           Limits (optional)
           <span className="text-muted transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
         </summary>
-        <div className="mt-4 space-y-5">
-          <label className="block">
-            Most I’ll pay per sale: <b>{maxCost}%</b>
-            <input type="range" min={Math.max(1, Math.ceil((cost ?? 100) / 100))} max={100} value={maxCost ?? 100} onChange={(e) => setMaxCostPct(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-brand)]" />
-            <span className="field-help block">If prices rise above this, sales pause until they come back.</span>
-          </label>
-          <label className="block">
-            Most refunds in total: <b>{formatUsd(parseUsd(String(capUsd)))}</b>
-            <input type="range" min={25} max={1000} step={25} value={capUsd} onChange={(e) => setCapUsd(Number(e.target.value))} className="mt-2 w-full accent-[var(--color-brand)]" />
-            <span className="field-help block">The promo stops selling once this much could be refunded.</span>
-          </label>
+        <div className="mt-4 space-y-6">
+          {cost !== null && maxCost !== null ? (
+            <MaxCostField cost={cost / 100} value={maxCost} onChange={setMaxCostPct} team={game.team} />
+          ) : null}
+          <CapField value={capUsd} onChange={setCapUsd} refundPct={pct} costPct={cost !== null ? cost / 100 : null} typical={typical} />
           <p className="text-xs text-muted">Sales stop automatically 12 minutes before the final, so every order can be protected.</p>
         </div>
       </details>
@@ -590,5 +584,124 @@ function GoogleG() {
       <path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.9-6.1z" />
       <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z" />
     </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Optional limits: each slider shows a recommended band and says plainly what a too-low or too-high value does.
+
+const pctText = (n: number) => `${Math.round(n)}%`;
+
+function MaxCostField({ cost, value, onChange, team }: { cost: number; value: number; onChange: (v: number) => void; team: string }) {
+  const min = Math.max(1, Math.ceil(cost));
+  const hi = Math.min(100, Math.ceil(cost * 1.5));
+  const lo = Math.min(hi, Math.max(min, Math.ceil(cost * 1.15)));
+  const tone = value < lo ? 'low' : value > hi ? 'high' : 'ok';
+  return (
+    <RangeField
+      label="Most I’ll pay per sale"
+      shown={pctText(value)}
+      min={min}
+      max={100}
+      step={1}
+      value={value}
+      onChange={onChange}
+      lo={lo}
+      hi={hi}
+      help="Your cost follows the odds. If it rises above this, sales pause until it comes back down."
+      verdict={
+        tone === 'low'
+          ? { warn: true, text: `Cutting it close. Today’s cost is ${pctText(cost)}, so a small move in the odds will pause your sales. ${pctText(lo)} or more keeps them running.` }
+          : tone === 'high'
+            ? { warn: true, text: `If ${team}’s chances jump, each sale could cost you up to ${value >= 100 ? 'its full price' : pctText(value)}. Most shops stay at ${pctText(hi)} or less.` }
+            : { warn: false, text: `Recommended: ${pctText(lo)}–${pctText(hi)}. Room for the odds to move without pausing sales.` }
+      }
+    />
+  );
+}
+
+function CapField({ value, onChange, refundPct, costPct, typical }: { value: number; onChange: (v: number) => void; refundPct: number; costPct: number | null; typical: ShopItem | null }) {
+  // What one typical promo order could get back (fallback $5).
+  const perOrder = Math.max(0.5, ((typical ? Number(BigInt(typical.price)) / 1e6 : 5) * refundPct) / 100);
+  const step = 25;
+  const lo = Math.min(1000, Math.max(25, Math.ceil((perOrder * 20) / step) * step));
+  const hi = Math.max(lo, Math.min(1000, Math.floor((perOrder * 150) / step) * step));
+  const orders = Math.floor(value / perOrder);
+  const item = typical ? typical.name.toLowerCase() : 'order';
+  // If every promo order sells: total sales = cap ÷ refund share; the shop's promo cost is its share of that.
+  const totalCost = costPct !== null ? Math.round(((value * 100) / refundPct) * (costPct / 100)) : null;
+  const tone = value < lo ? 'low' : value > hi ? 'high' : 'ok';
+  return (
+    <RangeField
+      label="Most refunds in total"
+      shown={`$${value}`}
+      sub={`≈ ${orders} promo order${orders === 1 ? '' : 's'}`}
+      min={25}
+      max={1000}
+      step={step}
+      value={value}
+      onChange={onChange}
+      lo={lo}
+      hi={hi}
+      help="The promo stops taking orders once this much could be refunded. You don’t pay it: refunds are covered by us."
+      verdict={
+        tone === 'low'
+          ? { warn: true, text: `Only about ${orders} promo order${orders === 1 ? '' : 's'} before it sells out. Busy game day? Try $${lo} or more.` }
+          : tone === 'high'
+            ? { warn: true, text: `About ${orders} promo orders. At ${costPct !== null ? pctText(costPct) : 'your cost'} per sale, that’s up to $${totalCost ?? '—'} in promo costs if they all sell. Fine for a big night; most shops start at $${hi} or less.` }
+            : { warn: false, text: `Recommended: $${lo}–$${hi} (about 20–150 ${item}s).` }
+      }
+    />
+  );
+}
+
+function RangeField(props: {
+  label: string;
+  shown: string;
+  sub?: string;
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (v: number) => void;
+  lo: number;
+  hi: number;
+  help: string;
+  verdict: { warn: boolean; text: string };
+}) {
+  const { label, shown, sub, min, max, step, value, onChange, lo, hi, help, verdict } = props;
+  const at = (v: number) => `${((Math.min(max, Math.max(min, v)) - min) / (max - min || 1)) * 100}%`;
+  return (
+    <label className="block">
+      <span className="flex items-baseline justify-between gap-3">
+        <span>
+          {label}: <b>{shown}</b>
+        </span>
+        {sub ? <span className="text-xs text-muted">{sub}</span> : null}
+      </span>
+      <span className="relative mt-2 block">
+        {/* The recommended band, drawn under the slider track */}
+        <span
+          className="range-band"
+          style={{ left: at(lo), width: `calc(${at(hi)} - ${at(lo)})` }}
+          aria-hidden="true"
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="relative w-full accent-[var(--color-brand)]"
+          aria-describedby={undefined}
+        />
+      </span>
+      <span className={`mt-1.5 flex items-start gap-1.5 text-[0.8125rem] leading-snug ${verdict.warn ? 'text-caution' : 'text-good'}`} role="status" aria-live="polite">
+        {verdict.warn ? <TriangleAlert className="mt-px h-4 w-4 shrink-0" aria-hidden="true" /> : <CircleCheck className="mt-px h-4 w-4 shrink-0" aria-hidden="true" />}
+        <span>{verdict.text}</span>
+      </span>
+      <span className="field-help block">{help}</span>
+    </label>
   );
 }

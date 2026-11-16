@@ -78,6 +78,8 @@ export function HeroScoreboard({ className = '' }: { className?: string }) {
   const pct = useCountUp(Math.round(ASK * 100), 0, true);
   const costShown = useCountUp(Number(cost.toFixed(2)), 2);
   const back = useCountUp(LATTE, 2);
+  // What the shop keeps of each promo latte (the same whether the team wins or loses).
+  const keepShown = useCountUp(Number((LATTE - Number(cost.toFixed(2))).toFixed(2)), 2);
   return (
     <div className={`board w-full p-5 sm:p-7 ${className}`}>
       <span className="board-label">Example game night</span>
@@ -117,6 +119,20 @@ export function HeroScoreboard({ className = '' }: { className?: string }) {
           <dd className="mt-1.5">
             <span className="t-score text-[2.5rem] text-chalk">${back}</span>
             <span className="mt-1 block text-sm text-chalk-muted">back to the customer, paid by us</span>
+          </dd>
+        </div>
+        <div>
+          <dt className="board-label">You keep</dt>
+          <dd className="mt-1.5">
+            <span className="t-score text-[2.5rem] text-chalk">${keepShown}</span>
+            <span className="mt-1 block text-sm text-chalk-muted">of each latte, win or lose</span>
+          </dd>
+        </div>
+        <div>
+          <dt className="board-label">If the Spurs lose</dt>
+          <dd className="mt-1.5">
+            <span className="t-score text-[2.5rem] text-chalk-muted">$0.00</span>
+            <span className="mt-1 block text-sm text-chalk-muted">no refunds, nobody owes anything</span>
           </dd>
         </div>
       </dl>

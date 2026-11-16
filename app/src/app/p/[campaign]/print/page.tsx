@@ -40,11 +40,34 @@ export default function PrintPage() {
   const posterRef = useRef<HTMLDivElement>(null);
   const [printImage, setPrintImage] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
+  // Everything must fit the sheet: a long offer or shop name can make the stack taller than the page, which would
+  // clip the bottom (the shop name and "Game-day promo"). The QR is the one flexible piece, so shrink it by exactly
+  // the overflow (never below 24% of the sheet, still easy to scan).
+  const fitToSheet = useCallback(() => {
+    const node = posterRef.current;
+    const qr = node?.querySelector<HTMLElement>('.poster-qr');
+    if (!node || !qr) return;
+    qr.style.width = '';
+    const over = node.scrollHeight - node.clientHeight;
+    if (over > 0) {
+      const sheet = node.clientWidth;
+      const target = Math.max(qr.offsetWidth - over - sheet * 0.015, sheet * 0.24); // + a little breathing room
+      qr.style.width = `${(target / sheet) * 100}cqw`;
+    }
+  }, []);
+  useEffect(() => {
+    if (!state || !shopName) return;
+    void document.fonts.ready.then(fitToSheet);
+    window.addEventListener('resize', fitToSheet);
+    return () => window.removeEventListener('resize', fitToSheet);
+  }, [state, shopName, fitToSheet]);
+
   const capture = useCallback(async (): Promise<string | null> => {
     const node = posterRef.current;
     if (!node) return null;
     await document.fonts.ready;
     for (let i = 0; i < 50 && !node.querySelector('.poster-qr svg'); i++) await new Promise((r) => setTimeout(r, 100));
+    fitToSheet();
     try {
       const url = await toPng(node, { pixelRatio: 2550 / node.offsetWidth, cacheBust: true, style: { borderRadius: '0', boxShadow: 'none' } });
       setPrintImage(url);
@@ -52,7 +75,7 @@ export default function PrintPage() {
     } catch {
       return null; // fall back to printing the live poster
     }
-  }, []);
+  }, [fitToSheet]);
   useEffect(() => {
     if (!state || !game || !origin || !shopName) return;
     const t = setTimeout(() => void capture(), 400);

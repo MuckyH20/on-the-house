@@ -90,6 +90,9 @@ devnet) handles the money:
   program can burn them when it pays out.
 - Checkout uses **Solana Pay**. The platform pays the transaction fees, so
   customers never need SOL.
+- The program carries a **security.txt** (contact, policy, source), so Solana
+  Explorer shows how to report a bug. The policy is in
+  [SECURITY.md](SECURITY.md).
 
 **Gemini** — where the coverage is bought:
 - Live prediction markets and prices for the shop to choose from.

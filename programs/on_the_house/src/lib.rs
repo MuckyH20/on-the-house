@@ -23,6 +23,18 @@ use state::Outcome;
 
 declare_id!("4qfLMXZTmKt71eDH4S3VNSDCRFPX7qxpPk3WZZgt2PM2");
 
+// Contact and policy info embedded in the deployed program (shown on Solana Explorer).
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "On the House",
+    project_url: "https://github.com/MuckyH20/on-the-house",
+    contacts: "link:https://github.com/MuckyH20/on-the-house/security/advisories/new",
+    policy: "https://github.com/MuckyH20/on-the-house/blob/main/SECURITY.md",
+    preferred_languages: "en",
+    source_code: "https://github.com/MuckyH20/on-the-house",
+    auditors: "None yet. Hackathon project on devnet with test funds."
+}
+
 #[program]
 pub mod on_the_house {
     use super::*;

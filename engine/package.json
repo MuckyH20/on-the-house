@@ -11,7 +11,8 @@
     "test": "tsx --test \"src/**/*.test.ts\"",
     "sandbox:test": "tsx src/tools/sandbox-order-test.ts",
     "verify:orders": "tsx src/tools/verify-orders.ts",
-    "db:export": "tsx src/tools/export-db.ts"
+    "db:export": "tsx src/tools/export-db.ts",
+    "gemini:account": "tsx src/tools/gemini-account.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.2.2",

@@ -25,6 +25,7 @@
     "stream": "pnpm --filter @oth/scripts stream",
     "verify:orders": "pnpm --filter @oth/engine verify:orders",
     "db:export": "pnpm --filter @oth/engine db:export",
+    "gemini:account": "pnpm --filter @oth/engine gemini:account",
     "smoke:owner": "pnpm --filter @oth/scripts smoke:owner",
     "proof": "pnpm --filter @oth/scripts proof",
     "security:publish": "bash scripts/publish-security.sh"

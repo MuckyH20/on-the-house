@@ -17,7 +17,8 @@ async function main() {
   const arg = process.argv[2]?.trim();
   if (!arg) throw new Error('usage: pnpm verify:orders <campaign address | Gemini order id>');
   const env = loadEngineEnv();
-  const engineUrl = `http://127.0.0.1:${env.ENGINE_PORT}`;
+  // The engine that holds the fills: PUBLIC_ENGINE_URL (the deployed one), else a local engine.
+  const engineUrl = (env.PUBLIC_ENGINE_URL || `http://127.0.0.1:${env.ENGINE_PORT}`).replace(/\/$/, '');
   const getState = async (address: string) => {
     const res = await fetch(`${engineUrl}/campaigns/${address}/state`);
     return res.ok ? ((await res.json()) as CampaignState) : null;

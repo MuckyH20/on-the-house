@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toPng } from 'html-to-image';
 import { CircleDollarSign, Printer, ScanLine, Trophy } from 'lucide-react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
 import { Mark } from '@/components/Brand';
@@ -12,9 +13,12 @@ import { gameFor, type Game } from '@/lib/game';
 import { DEMO_SHOP } from '@/lib/shop';
 
 /**
- * The counter sign: a full Letter-size poster (offer, game, big QR, shop). Every size inside is relative to the
- * sheet (cqw), so the on-screen preview and the printout match. Print styles (globals.css, .poster) drop the
- * browser's own header/footer by printing with zero page margins.
+ * The counter sign: a full-page poster (offer, game, big QR, shop). Every size inside is relative to the sheet
+ * (cqw), so the preview scales on any screen.
+ *
+ * Printing: browsers' print engines lay text out differently (Firefox clipped the end of lines), so once the poster
+ * is ready we capture it exactly as drawn on screen, at ~290 dpi, and print that image instead (Print button and
+ * Ctrl+P alike). Zero page margins drop the browser's own header/footer. If capture fails, the live poster prints.
  */
 export default function PrintPage() {
   const { campaign } = useParams<{ campaign: string }>();
@@ -30,13 +34,48 @@ export default function PrintPage() {
     });
   }, [campaign]);
   const game = gameFor(state?.market ?? null);
+
+  // Capture the finished poster as a print image (fonts loaded, QR drawn).
+  const posterRef = useRef<HTMLDivElement>(null);
+  const [printImage, setPrintImage] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const capture = useCallback(async (): Promise<string | null> => {
+    const node = posterRef.current;
+    if (!node) return null;
+    await document.fonts.ready;
+    for (let i = 0; i < 50 && !node.querySelector('.poster-qr svg'); i++) await new Promise((r) => setTimeout(r, 100));
+    try {
+      const url = await toPng(node, { pixelRatio: 2550 / node.offsetWidth, cacheBust: true, style: { borderRadius: '0', boxShadow: 'none' } });
+      setPrintImage(url);
+      return url;
+    } catch {
+      return null; // fall back to printing the live poster
+    }
+  }, []);
+  useEffect(() => {
+    if (!state || !game || !origin || !shopName) return;
+    const t = setTimeout(() => void capture(), 400);
+    return () => clearTimeout(t);
+  }, [state, game, origin, shopName, capture]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const print = async () => {
+    if (!printImage) {
+      setPreparing(true);
+      await capture();
+      setPreparing(false);
+      await new Promise((r) => setTimeout(r, 150)); // let the image mount before the dialog opens
+    }
+    window.print();
+  };
+
   if (!state || !game || !origin) return <PageSkeleton cards={1} />;
   const pct = state.campaign.refundBps / 100;
   const offer = pct >= 100 ? 'Your order is free' : `${pct}% back on your order`;
 
   return (
-    <div className="poster-wrap flex flex-col items-center gap-5 py-2">
-      <div className="poster">
+    <div className="poster-wrap flex flex-col items-center gap-5 py-2" data-print-image={printImage ? '' : undefined}>
+      {printImage ? <img src={printImage} alt="" className="poster-print-img" /> : null}
+      <div className="poster" ref={posterRef}>
         {/* Floodlit band: the offer */}
         <header className="poster-band night on-night">
           <h1 className="poster-offer">
@@ -98,10 +137,10 @@ export default function PrintPage() {
       </div>
 
       <div className="flex flex-col items-center gap-2 print:hidden">
-        <Button onClick={() => window.print()} variant="dark" size="lg">
-          <Printer className="h-5 w-5" aria-hidden="true" /> Print this sign
+        <Button onClick={() => void print()} loading={preparing} variant="dark" size="lg">
+          <Printer className="h-5 w-5" aria-hidden="true" /> {preparing ? 'Preparing…' : 'Print this sign'}
         </Button>
-        <p className="max-w-sm text-center text-sm text-muted">Letter size. If the colors don’t print, turn on “Background graphics” in the print dialog.</p>
+        <p className="max-w-sm text-center text-sm text-muted">Prints edge to edge on one page (Letter or A4). Keep the scale at 100%.</p>
       </div>
     </div>
   );

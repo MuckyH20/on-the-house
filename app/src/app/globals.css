@@ -414,6 +414,7 @@
   }
   .poster-shop { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; padding-top: 0.4cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 4.8cqw; line-height: 1.05; }
   .poster-shop[data-long] { font-size: 3.5cqw; text-wrap: balance; }
+  .poster-print-img { display: none; }
   .poster-small { margin-top: 0.6cqw; font-size: 1.7cqw; color: var(--color-subtle); }
   .poster-brand { display: flex; flex-shrink: 0; align-items: center; gap: 1.2cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 3cqw; white-space: nowrap; }
   .poster-brand svg { width: 4.6cqw; height: 4.6cqw; }
@@ -442,5 +443,8 @@
   /* Fill whatever paper is loaded (Letter, A4, ...). A hair under the page height so rounding can't spill a page. */
   .poster { width: 100%; height: calc(100vh - 1px); aspect-ratio: auto; overflow: visible; border-radius: 0; box-shadow: none; break-inside: avoid; break-after: avoid; }
   body:has(.poster) .page-in { animation: none; }
+  /* Print the captured image of the poster (identical to the screen), not a fresh print layout of it. */
+  .poster-wrap[data-print-image] .poster { display: none !important; }
+  .poster-wrap[data-print-image] .poster-print-img { display: block; width: 100%; height: calc(100vh - 1px); object-fit: contain; object-position: top center; break-inside: avoid; }
   .ticket-tear::before, .ticket-tear::after { background: #fff; }
 }

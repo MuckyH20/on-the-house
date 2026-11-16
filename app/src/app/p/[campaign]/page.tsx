@@ -8,6 +8,7 @@ import { Keypair, PublicKey } from '@solana/web3.js';
 import { formatUsd } from '@oth/shared';
 import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
 import { GameCard } from '@/components/GameCard';
+import { Mark } from '@/components/Brand';
 import { Minus, Plus, SearchX } from 'lucide-react';
 import { Button, EmptyState, Notice, PageSkeleton, Simulated, Spinner } from '@/components/ui';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
@@ -209,7 +210,7 @@ export default function PromoPage() {
             </div>
           ) : (
             <Button onClick={account.login} disabled={!account.ready} variant="secondary" block>
-              Sign in to save your rewards <span className="font-normal text-subtle">— optional</span>
+              Sign in to save your rewards <span className="hidden font-normal text-subtle sm:inline">— optional</span>
             </Button>
           )
         ) : null}
@@ -248,7 +249,7 @@ export default function PromoPage() {
 
       <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-subtle">
         <Link href={`/proof/${campaign}`} className="link-muted">How refunds are guaranteed</Link>
-        <span>Powered by <b className="font-semibold text-muted">On the House</b></span>
+        <span className="flex items-center gap-1.5">Powered by <Mark size={16} className="text-ink" /> <b className="font-display text-base font-extrabold uppercase text-ink">On the House</b></span>
       </footer>
     </div>
   );

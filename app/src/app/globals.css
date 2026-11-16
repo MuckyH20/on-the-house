@@ -123,6 +123,9 @@
    Component styles (used by src/components/ui.tsx — no one-off styles in pages)
    --------------------------------------------------------------------------- */
 @layer components {
+  /* Big Shoulders' small optical sizes open odd gaps ("BIT COIN") at 16-24px; pin the display cut everywhere. */
+  .font-display, .t-display, .t-h1, .t-h2, .t-score, .digits, .ribbon { font-variation-settings: "opsz" 72; }
+
   /* Type scale — display roles in Big Shoulders, reading roles in Schibsted Grotesk */
   .t-display {
     font-family: var(--font-display); font-weight: 800; text-transform: uppercase;
@@ -212,6 +215,20 @@
   .board-rule { border-color: rgb(242 240 233 / 0.1); }
   .board-label { font-size: 0.75rem; line-height: 1.33; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-chalk-muted); }
   .digits { font-family: var(--font-display); font-weight: 800; font-variant-numeric: tabular-nums; color: var(--color-floodlight); line-height: 1; }
+
+  /* Ribbon board: the stadium LED ticker under the hero */
+  .ribbon {
+    overflow: hidden; background: var(--color-night-deep);
+    border-block: 1px solid rgb(242 240 233 / 0.1);
+    font-family: var(--font-display); font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--color-chalk); font-size: 1.25rem; line-height: 1;
+  }
+  /* Starts in line with the page's content column, runs off the right edge. */
+  .ribbon-track { display: flex; padding-left: max(1.25rem, calc((100vw - 72rem) / 2 + 1.25rem)); }
+  @media (min-width: 640px) { .ribbon-track { padding-left: max(2rem, calc((100vw - 72rem) / 2 + 2rem)); } }
+  .ribbon-row { flex-shrink: 0; }
+  .ribbon-row { display: flex; align-items: center; gap: 1.5rem; padding: 0.875rem 0; margin: 0; list-style: none; }
+  .ribbon-row li:nth-child(odd) span { color: var(--color-floodlight); }
 
   /* Ticket stub: orders, receipts, the cost slip. The tear line has notches cut from the page. */
   .ticket { position: relative; background: var(--color-card); border: 1px solid var(--color-line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); overflow: hidden; }

@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
 import { TeamMark } from '@/components/GameCard';
+import { Mark } from '@/components/Brand';
 import { Qr } from '@/components/Qr';
 import { Button, PageSkeleton } from '@/components/ui';
 import { engine } from '@/lib/client';
@@ -48,9 +49,15 @@ export default function PrintPage() {
           <p className="t-h2 mt-6">Scan to order</p>
           <p className="mx-auto mt-2 max-w-sm text-muted">If {game.team} wins, your money comes back automatically. No app, nothing to sign up for.</p>
         </div>
-        <div className="ticket-tear px-6 py-4">
-          <p className="font-display text-2xl font-extrabold uppercase">{shopName}</p>
-          <p className="text-sm text-subtle">Game-day promo</p>
+        <div className="ticket-tear flex items-center justify-between gap-4 px-6 py-4 text-left">
+          <div>
+            <p className="font-display text-2xl font-extrabold uppercase">{shopName}</p>
+            <p className="text-sm text-subtle">Game-day promo</p>
+          </div>
+          <div className="flex items-center gap-1.5 text-ink">
+            <Mark size={22} />
+            <span className="font-display text-lg font-extrabold uppercase">On the House</span>
+          </div>
         </div>
       </div>
       <Button onClick={() => window.print()} variant="dark" size="lg" className="mt-6 print:hidden">Print this sign</Button>

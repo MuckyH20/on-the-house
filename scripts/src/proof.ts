@@ -37,9 +37,26 @@ const green = c('32');
 const orange = c('38;5;208');
 const report: string[] = [];
 
+/** Hard-wraps report text at 80 columns so the saved Markdown reads well in `cat`. */
+function wrap(text: string, first = '', rest = first, width = 80): string {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.replace(/\x1b\[[0-9;]*m/g, '').split(/\s+/).filter(Boolean)) {
+    const indent = lines.length ? rest : first;
+    if (line && indent.length + line.length + 1 + word.length > width) {
+      lines.push(indent + line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  lines.push((lines.length ? rest : first) + line);
+  return lines.join('\n');
+}
+
 function act(title: string, intro: string) {
   console.log(`\n${orange('━'.repeat(72))}\n${bold(orange(title.toUpperCase()))}\n${dim(intro)}`);
-  report.push(`\n## ${title}\n\n${intro}\n`);
+  report.push(`\n## ${title}\n\n${wrap(intro)}\n`);
 }
 let stepNo = 0;
 function step(title: string) {
@@ -47,21 +64,21 @@ function step(title: string) {
   console.log(`\n${bold(`${stepNo}. ${title}`)}`);
   report.push(`\n### ${stepNo}. ${title}\n`);
 }
-function say(text: string) {
+function say(text: string, toReport = true) {
   console.log(`   ${text}`);
-  report.push(`${text.replace(/\x1b\[[0-9;]*m/g, '')}  `);
+  if (toReport) report.push(`\n${wrap(text)}\n`);
 }
 function ok(text: string) {
   console.log(`   ${green('✓')} ${text}`);
-  report.push(`- ✅ ${text}`);
+  report.push(wrap(text, '- ✅ ', '  '));
 }
 function link(label: string, url: string) {
   console.log(`   ${dim(label + ':')} ${url}`);
-  report.push(`- ${label}: <${url}>`);
+  report.push(`${wrap(`${label}:`, '- ', '  ')}\n  <${url}>`);
 }
 function code(label: string, ref: string) {
   console.log(`   ${dim('code · ' + label + ':')} ${ref}`);
-  report.push(`- Code · ${label}: \`${ref}\``);
+  report.push(wrap(`Code · ${label}: \`${ref}\``, '- ', '  '));
 }
 
 const tx = (sig: string) => `https://explorer.solana.com/tx/${sig}?cluster=devnet`;
@@ -186,7 +203,7 @@ async function main() {
   const connection = new Connection(RPC, { commitment: 'confirmed', wsEndpoint: wsUrlFor(RPC) });
   const health = await j<Health>(`${ENGINE}/health`);
   const startedAt = new Date();
-  report.push(`# On the House — live proof run\n\n${startedAt.toUTCString()} · Solana ${health.cluster} · Gemini ${health.geminiMode} · test money only`);
+  report.push(`# On the House — live proof run\n\n${wrap(`${startedAt.toUTCString()} · Solana ${health.cluster} · Gemini ${health.geminiMode} · test money only`)}`);
 
   act('Setup', 'Which program, network and venues this run uses.');
   step('The deployed Solana program');
@@ -222,8 +239,8 @@ async function main() {
       say('Asks Gemini’s API for its order history, matches the order, and checks the Solana record stores sha256(order id).');
       const v = spawnSync('pnpm', ['-s', '--filter', '@oth/engine', 'verify:orders', r.campaign], { cwd: ROOT, encoding: 'utf8' });
       const out = `${v.stdout ?? ''}${v.stderr ?? ''}`.split('\n').filter((l) => /✓|✗|VERIFIED|MISMATCH|Gemini (position|settled)|explorer\.solana/.test(l));
-      for (const l of out) say(l.trim());
-      report.push('```', ...out.map((l) => l.trim()), '```');
+      for (const l of out) say(l.trim(), false);
+      report.push(...out.map((l) => wrap(l.trim(), '- ', '  ')));
       code('the cross-check', ref('engine/src/tools/verify-orders.ts', "createHash('sha256')"));
       say(`The result arrives after the final${real.closesAt ? ` (${new Date(real.closesAt).toLocaleString()})` : ''}: the engine reads Gemini’s result, settles on Solana and pays refunds.`);
       code('settle + pay after the final', ref('engine/src/settler.ts', 'this.markets.resolution('));

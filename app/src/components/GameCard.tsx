@@ -43,6 +43,8 @@ export function useTimeLeft(closesAt: string | null): string | null {
   const m = Math.floor((ms % 3_600_000) / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
+  // Over a day away, a ticking clock is noise: show days and hours instead.
+  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h`;
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { HeroScoreboard } from '@/components/HeroScoreboard';
+import { Ribbon } from '@/components/Ribbon';
 import { ButtonLink } from '@/components/ui';
 
 const TIMELINE = [
@@ -66,8 +67,10 @@ export default function Home() {
           <HeroScoreboard />
         </div>
 
+        <Ribbon />
+
         <div id="how" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-20 sm:px-8 sm:pb-24">
-          <div className="border-t border-white/10 pt-12">
+          <div className="pt-16">
             <h2 className="t-h2 max-w-xl">How a game night works</h2>
             <ol className="mt-10 grid gap-8 md:grid-cols-3">
               {TIMELINE.map((s, i) => (

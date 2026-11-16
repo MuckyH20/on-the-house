@@ -7,10 +7,25 @@ import './globals.css';
 const shoulders = Big_Shoulders({ subsets: ['latin'], variable: '--font-shoulders', display: 'swap', axes: ['opsz'] });
 const schibsted = Schibsted_Grotesk({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
+// Absolute base for share-card URLs: an explicit site URL, else Vercel's production domain, else local dev.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000');
+const description = 'Run “free if your team wins” promos on game day. You pay a set share of each promo order; if your team wins, the refunds are paid by us.';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: 'On the House — free if your team wins',
-  description: 'Run “free if your team wins” promos at a small, fixed cost. Zero risk to your shop.',
-  icons: { icon: '/icon.svg' },
+  description,
+  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
+  openGraph: {
+    title: 'On the House — free if your team wins',
+    description,
+    siteName: 'On the House',
+    type: 'website',
+    images: [{ url: '/og.png', width: 1200, height: 630, alt: 'On the House: free if your team wins. You never pay the refund.' }],
+  },
+  twitter: { card: 'summary_large_image', title: 'On the House — free if your team wins', description, images: ['/og.png'] },
 };
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#0c1510' };

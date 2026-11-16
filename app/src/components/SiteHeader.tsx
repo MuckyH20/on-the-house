@@ -2,15 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo } from '@/components/Brand';
 
-export function Logo({ className = '' }: { className?: string }) {
-  return (
-    <Link href="/" className={`flex items-center gap-2 ${className}`}>
-      <img src="/icon.svg" alt="" className="h-7 w-7" />
-      <span className="font-display text-xl font-extrabold uppercase leading-none tracking-wide">On the House</span>
-    </Link>
-  );
-}
+export { Logo };
 
 /** Our brand header — night on the landing page (it sits on the floodlit hero), light in the app. Hidden on customer promo pages, which belong to the shop. */
 export function SiteHeader() {

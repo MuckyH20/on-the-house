@@ -382,6 +382,7 @@
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .poster-band { padding: 6.4cqw 7cqw 5.4cqw; text-align: center; }
+  .poster :is(.poster-offer, .poster-matchup, .poster-scan, .poster-step-title, .poster-shop, .poster-brand) { padding-inline: 0.06em; }
   .poster-offer { font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 9.8cqw; line-height: 0.88; text-wrap: balance; }
   /* gap keeps a minimum space between blocks even on the shorter Letter sheet; extra height centres them. */
   .poster-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3.4cqw; padding: 3cqw 7cqw 2.4cqw; text-align: center; }
@@ -411,7 +412,8 @@
     display: flex; align-items: center; justify-content: space-between; gap: 3cqw;
     margin: 0 6.5cqw; padding: 2.8cqw 0 6.2cqw; border-top: 0.3cqw dashed var(--color-line-strong);
   }
-  .poster-shop { overflow-wrap: anywhere; padding-top: 0.4cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 4.8cqw; line-height: 1.05; }
+  .poster-shop { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; padding-top: 0.4cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 4.8cqw; line-height: 1.05; }
+  .poster-shop[data-long] { font-size: 3.5cqw; text-wrap: balance; }
   .poster-small { margin-top: 0.6cqw; font-size: 1.7cqw; color: var(--color-subtle); }
   .poster-brand { display: flex; flex-shrink: 0; align-items: center; gap: 1.2cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 3cqw; white-space: nowrap; }
   .poster-brand svg { width: 4.6cqw; height: 4.6cqw; }
@@ -438,7 +440,7 @@
   main:has(.poster) { padding: 0 !important; margin: 0 !important; max-width: none !important; }
   .poster-wrap { padding: 0 !important; gap: 0 !important; display: block !important; }
   /* Fill whatever paper is loaded (Letter, A4, ...). A hair under the page height so rounding can't spill a page. */
-  .poster { width: 100%; height: calc(100vh - 1px); aspect-ratio: auto; border-radius: 0; box-shadow: none; break-inside: avoid; break-after: avoid; }
+  .poster { width: 100%; height: calc(100vh - 1px); aspect-ratio: auto; overflow: visible; border-radius: 0; box-shadow: none; break-inside: avoid; break-after: avoid; }
   body:has(.poster) .page-in { animation: none; }
   .ticket-tear::before, .ticket-tear::after { background: #fff; }
 }

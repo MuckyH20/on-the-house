@@ -85,7 +85,7 @@ export default function PrintPage() {
 
         <footer className="poster-foot">
           <div className="min-w-0">
-            <div className="poster-shop">{shopName}</div>
+            <div className="poster-shop" data-long={(shopName?.length ?? 0) > 16 || undefined}>{shopName}</div>
             <div className="poster-small">Game-day promo</div>
           </div>
           <div className="poster-brand">

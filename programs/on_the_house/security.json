@@ -1,0 +1,11 @@
+{
+  "name": "On the House",
+  "description": "Game-day promos for local shops: your order is free if your team wins. Records each sale and refund claim, and enforces the shop's limits.",
+  "project_url": "https://github.com/MuckyH20/on-the-house",
+  "contacts": ["link:https://github.com/MuckyH20/on-the-house/security/advisories/new"],
+  "policy": "https://github.com/MuckyH20/on-the-house/blob/main/SECURITY.md",
+  "preferred_languages": ["en"],
+  "source_code": "https://github.com/MuckyH20/on-the-house",
+  "auditors": ["None yet. Hackathon project on devnet with test funds."],
+  "version": "0.1.0"
+}

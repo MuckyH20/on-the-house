@@ -147,3 +147,73 @@ export function playHorn(): void {
   for (const f of [220, 277.2, 329.6]) tone(c, lp, { type: 'sawtooth', freq: f * 0.97, glideTo: f, at: t, dur: 0.95, gain: 0.16, attack: 0.05 });
   noise(c, out, { at: t + 0.25, dur: 1.4, gain: 0.25, type: 'bandpass', freq: 900, q: 0.5, attack: 0.3 });
 }
+
+/**
+ * The opening animation's soundtrack, timed to its CSS beats (see .intro in globals.css): a whoosh as the roof
+ * draws, a thump as the ball lands plus a smaller bounce, a short whistle as the wordmark rises, and a crowd roar
+ * as the curtain lifts. Only plays after a tap (kick-off button or clicking the logo), like every sound here.
+ */
+export function playIntro(): void {
+  const r = ready();
+  if (!r) return;
+  const { c, out } = r;
+  const t = c.currentTime + 0.02;
+  // roof draws: rising filtered-noise whoosh
+  const len = Math.ceil(c.sampleRate * 0.7);
+  const buf = c.createBuffer(1, len, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const bp = c.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.Q.value = 1.2;
+  bp.frequency.setValueAtTime(300, t + 0.1);
+  bp.frequency.exponentialRampToValueAtTime(2400, t + 0.65);
+  const g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t + 0.1);
+  g.gain.exponentialRampToValueAtTime(0.35, t + 0.4);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.72);
+  src.connect(bp).connect(g).connect(out);
+  src.start(t + 0.1);
+  src.stop(t + 0.8);
+  // ball lands, then a small bounce
+  tone(c, out, { type: 'sine', freq: 150, glideTo: 55, at: t + 0.87, dur: 0.22, gain: 0.9, attack: 0.004 });
+  tone(c, out, { type: 'sine', freq: 130, glideTo: 60, at: t + 1.02, dur: 0.14, gain: 0.35, attack: 0.004 });
+  // wordmark: a quick double whistle
+  for (const [start, dur] of [[0.92, 0.09], [1.05, 0.22]] as const) {
+    const o = tone(c, out, { type: 'triangle', freq: 2900, at: t + start, dur, gain: 0.32, attack: 0.01 });
+    const lfo = c.createOscillator();
+    const depth = c.createGain();
+    lfo.frequency.value = 42;
+    depth.gain.value = 140;
+    lfo.connect(depth).connect(o.frequency);
+    lfo.start(t + start);
+    lfo.stop(t + start + dur + 0.05);
+  }
+  // curtain lifts: the crowd
+  noise(c, out, { at: t + 1.45, dur: 1.9, gain: 0.34, type: 'bandpass', freq: 850, q: 0.5, attack: 0.45 });
+}
+
+let lastTick = 0;
+/** Scoreboard tick while the numbers roll up; pitch climbs with progress (0–1). Throttled so it stays a ticker. */
+export function playTick(progress: number): void {
+  const r = ready();
+  if (!r) return;
+  const now = performance.now();
+  if (now - lastTick < 38) return;
+  lastTick = now;
+  const { c, out } = r;
+  const t = c.currentTime + 0.005;
+  tone(c, out, { type: 'square', freq: 1500 + progress * 700, at: t, dur: 0.028, gain: 0.07, attack: 0.002 });
+}
+
+/** Two quick notes when the scoreboard numbers lock in. */
+export function playScoreLock(): void {
+  const r = ready();
+  if (!r) return;
+  const { c, out } = r;
+  const t = c.currentTime + 0.01;
+  tone(c, out, { type: 'sine', freq: 1568, at: t, dur: 0.18, gain: 0.32, attack: 0.004 });
+  tone(c, out, { type: 'sine', freq: 2093, at: t + 0.09, dur: 0.38, gain: 0.36, attack: 0.004 });
+}

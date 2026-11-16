@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 /**
  * The On the House mark: a game ball sheltered under a roof. "On the house" means free, and the house has the
@@ -19,8 +22,20 @@ export function Mark({ size = 32, tone = 'auto', className = '' }: { size?: numb
 
 /** Mark + wordmark. The wordmark is set in the display face; "the" is lighter so the name reads ON · HOUSE. */
 export function Logo({ className = '', size = 30 }: { className?: string; size?: number }) {
+  const path = usePathname();
   return (
-    <Link href="/" className={`group flex items-center gap-2.5 ${className}`} aria-label="On the House, home">
+    <Link
+      href="/"
+      className={`group flex items-center gap-2.5 ${className}`}
+      aria-label="On the House, home"
+      onClick={(e) => {
+        // Already home: replay the opening animation, with sound (this click is the tap browsers require).
+        if (path !== '/') return;
+        e.preventDefault();
+        window.scrollTo({ top: 0 });
+        window.dispatchEvent(new Event('oth:intro'));
+      }}
+    >
       <Mark size={size} className="transition-transform duration-300 ease-[var(--ease-out)] group-hover:-translate-y-0.5" />
       <span className="whitespace-nowrap font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-[0.02em]">
         On <span className="font-semibold opacity-70">the</span> House

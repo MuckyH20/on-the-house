@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TeamMark } from '@/components/GameCard';
 import type { Game } from '@/lib/game';
 import { costBps } from '@/lib/shop';
+import { playScoreLock, playTick } from '@/lib/sound';
 
 const LATTE = 4.5;
 const ASK = 0.25;
@@ -24,32 +25,57 @@ const SPURS: Game = {
 };
 
 /**
- * Scoreboard numbers roll up from zero as the board lands (after the opening animation on a first visit).
+ * Scoreboard numbers roll up from zero as the board lands, ticking like a scoreboard and chiming as they lock in.
  * Server-rendered at their final values, so nothing is wrong without JS; static for reduced motion.
+ * Starts after the opening animation; in kick-off mode (/?kickoff) it waits for the tap, and every replay
+ * ('oth:intro') re-counts. Sounds only play once audio is unlocked by a tap, like every sound on the site.
  */
-function useCountUp(target: number, decimals: number): string {
+function useCountUp(target: number, decimals: number, chime = false): string {
   const [value, setValue] = useState(target);
+  const [take, setTake] = useState<{ n: number; intro: boolean }>({ n: 0, intro: false });
+  useEffect(() => {
+    const replay = () => setTake((t) => ({ n: t.n + 1, intro: true }));
+    const skip = () => setTake((t) => ({ n: t.n + 1, intro: false }));
+    window.addEventListener('oth:intro', replay);
+    window.addEventListener('oth:count', skip);
+    return () => {
+      window.removeEventListener('oth:intro', replay);
+      window.removeEventListener('oth:count', skip);
+    };
+  }, []);
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const delay = (document.documentElement.hasAttribute('data-intro-seen') ? 0 : 1550) + 700;
+    const d = document.documentElement;
+    if (take.n === 0 && d.hasAttribute('data-kickoff') && !d.hasAttribute('data-kickoff-run')) {
+      setValue(0); // kick-off mode: hold at zero until the tap
+      return;
+    }
+    const introPlaying = take.n > 0 ? take.intro : !d.hasAttribute('data-intro-seen');
+    const delay = (introPlaying ? 1550 : 0) + 700;
     setValue(0);
     const start = performance.now() + delay;
     let raf = 0;
+    let shown = (0).toFixed(decimals);
     const tick = (now: number) => {
       const p = Math.min(1, Math.max(0, (now - start) / 1100));
-      setValue(target * (1 - Math.pow(1 - p, 3)));
+      const v = target * (1 - Math.pow(1 - p, 3));
+      setValue(v);
+      const next = v.toFixed(decimals);
+      if (next !== shown && p < 1) playTick(p);
+      shown = next;
       if (p < 1) raf = requestAnimationFrame(tick);
+      else if (chime) playScoreLock();
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target]);
+  }, [target, decimals, chime, take]);
   return value.toFixed(decimals);
 }
 
 /** The landing hero's scoreboard: one game night, and what a "free if they win" latte costs the shop. */
 export function HeroScoreboard({ className = '' }: { className?: string }) {
   const cost = (LATTE * costBps(100, String(ASK))) / 10_000;
-  const pct = useCountUp(Math.round(ASK * 100), 0);
+  const pct = useCountUp(Math.round(ASK * 100), 0, true);
   const costShown = useCountUp(Number(cost.toFixed(2)), 2);
   const back = useCountUp(LATTE, 2);
   return (

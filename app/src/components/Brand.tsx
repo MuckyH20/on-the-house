@@ -26,7 +26,7 @@ export function Logo({ className = '', size = 30 }: { className?: string; size?:
   return (
     <Link
       href="/"
-      className={`group flex items-center gap-2.5 ${className}`}
+      className={`group flex items-center gap-2.5 transition-transform duration-300 ease-[var(--ease-out)] hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className}`}
       aria-label="On the House, home"
       onClick={(e) => {
         // Replay the opening animation with sound (this click is the tap browsers require). From another page,
@@ -40,7 +40,7 @@ export function Logo({ className = '', size = 30 }: { className?: string; size?:
         window.dispatchEvent(new Event('oth:intro'));
       }}
     >
-      <Mark size={size} className="transition-transform duration-300 ease-[var(--ease-out)] group-hover:-translate-y-0.5" />
+      <Mark size={size} />
       <span className="whitespace-nowrap font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-[0.02em]">
         On <span className="font-semibold opacity-70">the</span> House
       </span>

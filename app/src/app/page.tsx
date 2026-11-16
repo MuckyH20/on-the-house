@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Mark } from '@/components/Brand';
 import { HeroScoreboard } from '@/components/HeroScoreboard';
 import { JumpLink } from '@/components/JumpLink';
 import { Reveal } from '@/components/Reveal';
@@ -149,12 +150,24 @@ export default function Home() {
         <Link href="/help" className="link mt-8 inline-block">All questions →</Link>
       </section>
 
-      {/* ------------------------------------------------ Close */}
-      <section className="flex flex-col items-start justify-between gap-6 border-t border-line pt-12 sm:flex-row sm:items-end">
-        <Reveal as="h2" className="t-display reveal max-w-2xl text-[3rem] sm:text-[4.5rem]">Ready for game day?</Reveal>
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <ButtonLink href="/start" size="lg">Start your promo</ButtonLink>
-          <ButtonLink href="/help" variant="secondary" size="lg">Read the guide</ButtonLink>
+      {/* ------------------------------------------------ Close: a floodlit scoreboard, bookending the hero */}
+      <section className="kickoff px-6 py-10 sm:px-12 sm:py-14">
+        <Mark size={320} className="kickoff-mark" />
+        <div className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-end">
+          <div>
+            <div className="board-label flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-floodlight" aria-hidden="true" />
+              Kickoff
+            </div>
+            <Reveal as="h2" className="t-display reveal mt-3 max-w-2xl text-[3rem] sm:text-[4.5rem]">
+              Ready for <span className="text-floodlight">game day?</span>
+            </Reveal>
+            <p className="t-body mt-3 max-w-md text-chalk-muted">Add your shop and launch your first promo in about two minutes.</p>
+          </div>
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <ButtonLink href="/start" variant="flood" size="lg">Start your promo</ButtonLink>
+            <ButtonLink href="/help" variant="night" size="lg">Read the guide</ButtonLink>
+          </div>
         </div>
       </section>
     </div>

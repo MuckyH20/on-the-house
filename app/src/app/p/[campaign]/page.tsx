@@ -71,6 +71,11 @@ export default function PromoPage() {
   const refundPct = c ? c.refundBps / 100 : 0;
   const ended = c && (c.status === 'settled' || c.status === 'cancelled');
   const available = quote.data?.available ?? false;
+  // One order can only carry so much refund before it's protected (an on-chain limit). Catch it before paying.
+  const maxOrderRefund = quote.data?.maxOrderRefund !== undefined ? BigInt(quote.data.maxOrderRefund) : null;
+  const orderRefund = quote.data?.refund !== undefined ? BigInt(quote.data.refund) : null;
+  const tooBig = total > 0n && maxOrderRefund !== null && orderRefund !== null && orderRefund > maxOrderRefund;
+  const maxOrderAmount = c && maxOrderRefund !== null && c.refundBps > 0 ? (maxOrderRefund * 10_000n) / BigInt(c.refundBps) : null;
   const usdcMint = useRef<PublicKey | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -194,10 +199,17 @@ export default function PromoPage() {
           <span className="text-muted">Total</span>
           <span className="t-score text-[2.5rem]">{formatUsd(total)}</span>
         </div>
-        {total > 0n && quote.data?.refund && !ended && game ? (
+        {tooBig && !ended ? (
+          <Notice tone="caution">
+            {maxOrderAmount && maxOrderAmount > 0n
+              ? <>This promo takes orders up to <b>{formatUsd(maxOrderAmount)}</b> at a time. Remove an item, or pay for the rest in a second order.</>
+              : <>This promo is catching up on orders. Please try again in a few seconds.</>}
+          </Notice>
+        ) : null}
+        {total > 0n && quote.data?.refund && !ended && game && !tooBig ? (
           <Notice tone="good">If {game.team} wins, you get <b>{formatUsd(quote.data.refund)}</b> back — automatically.</Notice>
         ) : null}
-        <Button onClick={() => void pay()} loading={busy === 'pay'} disabled={!payer || total === 0n || busy !== null || !available || !!ended || (balance !== null && balance < total)} size="lg" block>
+        <Button onClick={() => void pay()} loading={busy === 'pay'} disabled={!payer || total === 0n || busy !== null || !available || tooBig || !!ended || (balance !== null && balance < total)} size="lg" block>
           {busy === 'pay' ? 'Paying…' : `Pay ${total > 0n ? formatUsd(total) : ''}`}
         </Button>
         <div className="flex items-center justify-between text-sm">

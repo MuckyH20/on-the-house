@@ -254,6 +254,13 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       paused: c.status !== 'open' || hedger.pausedByHedger(c.address),
       available: reason === null,
       reason,
+      maxOrderRefund: (() => {
+        const liability = BigInt(c.liability);
+        const room = BigInt(c.maxUnhedged) - unhedgedLiability(liability, BigInt(c.hedgedContracts));
+        const capRoom = BigInt(c.liabilityCap) - liability;
+        const m = room < capRoom ? room : capRoom;
+        return (m > 0n ? m : 0n).toString();
+      })(),
       simulated: flagsFor(c.marketSymbol),
       quotedAt: Date.now(),
     };

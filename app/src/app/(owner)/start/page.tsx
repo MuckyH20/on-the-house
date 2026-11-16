@@ -212,7 +212,8 @@ function PromoStep({ shopName, items, onEditShop, onLaunched }: { shopName: stri
         refundPct: pct,
         maxCostPct: maxCost ?? 100,
         liabilityCapUsd: capUsd,
-        maxUnhedgedUsd: Math.min(25, capUsd),
+        // Refunds may sit uncovered for the second it takes to buy protection; $100 lets a big order through.
+        maxUnhedgedUsd: Math.min(100, capUsd),
         deadlineMinutes: Math.max(1, minutesLeft),
       });
       onLaunched(campaign);

@@ -67,6 +67,11 @@ export interface Quote {
   available: boolean;
   /** Plain-language reason when not available. */
   reason: string | null;
+  /**
+   * Largest refund (base units) one order can carry right now: the on-chain limit on refunds not yet covered,
+   * minus what's uncovered at this moment, and never past the promo's total refund cap. Bigger orders are refused.
+   */
+  maxOrderRefund: string;
   simulated: SimulatedFlags;
   /** Present when `?amount=` (base units) was passed. */
   amount?: string;

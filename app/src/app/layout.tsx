@@ -19,7 +19,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'On the House — free if your team wins',
   description,
-  icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { url: '/favicon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: 'On the House — free if your team wins',
     description,

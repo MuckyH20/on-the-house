@@ -20,12 +20,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'On the House — free if your team wins',
   description,
-  // ?v= busts browsers' stubborn favicon cache whenever the mark changes.
+  // Transparent mark. The SVG comes first and adapts to light/dark browser chrome (dark roof on light tabs, white
+  // roof on dark ones); .ico/PNG are fallbacks with the dark roof. ?v= busts browsers' stubborn favicon cache.
   icons: {
     icon: [
-      { url: '/favicon.ico?v=2', sizes: '16x16 32x32 48x48' },
-      { url: '/favicon-32.png?v=2', type: 'image/png', sizes: '32x32' },
-      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
+      { url: '/icon.svg?v=3', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/favicon.ico?v=3', sizes: '16x16 32x32 48x48' },
+      { url: '/favicon-32.png?v=3', type: 'image/png', sizes: '32x32' },
     ],
     apple: '/apple-touch-icon.png?v=2',
   },

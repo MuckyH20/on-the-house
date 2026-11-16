@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { HeroScoreboard } from '@/components/HeroScoreboard';
+import { JumpLink } from '@/components/JumpLink';
 import { Reveal } from '@/components/Reveal';
 import { Ribbon } from '@/components/Ribbon';
 import { ButtonLink } from '@/components/ui';
@@ -61,7 +62,7 @@ export default function Home() {
             </p>
             <div className="enter enter-4 mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/start" variant="flood" size="lg">Start your promo <span className="btn-arrow" aria-hidden="true">→</span></ButtonLink>
-              <ButtonLink href="#how" variant="night" size="lg">How it works</ButtonLink>
+              <JumpLink to="how" className="btn btn-night btn-lg">How it works</JumpLink>
             </div>
             <p className="enter enter-4 mt-4 text-sm text-chalk-muted">About 2 minutes · No crypto needed · Sign in with Google</p>
           </div>

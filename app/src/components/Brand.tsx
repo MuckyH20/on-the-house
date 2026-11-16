@@ -29,8 +29,12 @@ export function Logo({ className = '', size = 30 }: { className?: string; size?:
       className={`group flex items-center gap-2.5 ${className}`}
       aria-label="On the House, home"
       onClick={(e) => {
-        // Already home: replay the opening animation, with sound (this click is the tap browsers require).
-        if (path !== '/') return;
+        // Replay the opening animation with sound (this click is the tap browsers require). From another page,
+        // let the link go home and ask the landing page to play it on arrival.
+        if (path !== '/') {
+          (window as unknown as { __othReplay?: boolean }).__othReplay = true;
+          return;
+        }
         e.preventDefault();
         window.scrollTo({ top: 0 });
         window.dispatchEvent(new Event('oth:intro'));

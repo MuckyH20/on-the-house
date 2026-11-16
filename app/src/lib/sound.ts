@@ -217,3 +217,16 @@ export function playScoreLock(): void {
   tone(c, out, { type: 'sine', freq: 1568, at: t, dur: 0.18, gain: 0.32, attack: 0.004 });
   tone(c, out, { type: 'sine', freq: 2093, at: t + 0.09, dur: 0.38, gain: 0.36, attack: 0.004 });
 }
+
+/**
+ * Can sound play right now without a tap? Browsers usually say no on a first visit, but Chrome says yes for sites
+ * the visitor uses a lot (and for a recording browser launched with autoplay allowed). Never throws.
+ */
+export async function audioAllowed(): Promise<boolean> {
+  unlockAudio();
+  if (!ctx) return false;
+  if (ctx.state === 'running') return true;
+  const c = ctx;
+  await Promise.race([c.resume().catch(() => {}), new Promise((r) => setTimeout(r, 200))]);
+  return (c.state as AudioContextState) === 'running'; // resume() may have changed it
+}

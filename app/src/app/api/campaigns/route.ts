@@ -1,4 +1,4 @@
-import { HttpError, jsonError } from '@/lib/server';
+import { HttpError, jsonError, requireDemoAccess } from '@/lib/server';
 import { launch, LaunchBody } from '@/lib/launch';
 
 /**
@@ -12,6 +12,7 @@ export async function POST(req: Request) {
   try {
     const parsed = LaunchBody.safeParse(await req.json().catch(() => null));
     if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '));
+    if (!parsed.data.merchant) requireDemoAccess(req); // no owner wallet = the server's demo shop
     return Response.json(await launch(parsed.data));
   } catch (e) {
     return jsonError(e);

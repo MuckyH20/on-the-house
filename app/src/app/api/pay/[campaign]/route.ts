@@ -25,9 +25,19 @@ export function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS });
 }
 
-export async function GET(req: Request) {
+/** Wallets show this label and icon before the customer approves: the promo's own shop name. */
+export async function GET(req: Request, { params }: Ctx) {
   const origin = new URL(req.url).origin;
-  return Response.json({ label: 'UBC Coffee Cart', icon: `${origin}/icon.svg` }, { headers: CORS });
+  let label = 'On the House';
+  try {
+    const { campaign } = await params;
+    const { program } = await serverCtx();
+    const c = await fetchCampaign(program, parsePubkey(campaign, 'campaign'));
+    if (c) label = (await engineFetch<{ name?: string }>(`/shops/${c.merchant}`).catch(() => null))?.name?.slice(0, 40) || label;
+  } catch {
+    // Unknown promo: the generic label is fine (the POST will explain).
+  }
+  return Response.json({ label, icon: `${origin}/apple-touch-icon.png` }, { headers: CORS });
 }
 
 export async function POST(req: Request, { params }: Ctx) {

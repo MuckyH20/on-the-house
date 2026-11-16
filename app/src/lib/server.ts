@@ -1,5 +1,5 @@
 import 'server-only';
-import { createPrivateKey, sign } from 'node:crypto';
+import { createHash, createPrivateKey, sign, timingSafeEqual } from 'node:crypto';
 import bs58 from 'bs58';
 import { Connection, type Keypair, PublicKey } from '@solana/web3.js';
 import { appServerEnvSchema, assertDevnet, parseEnv, wsUrlFor, type AppServerEnv } from '@oth/shared';
@@ -64,6 +64,20 @@ export function jsonError(e: unknown, headers?: HeadersInit): Response {
   const message = e instanceof Error ? e.message : String(e);
   if (status >= 500) console.error('[api]', message);
   return Response.json({ error: message }, { status, headers });
+}
+
+/**
+ * Routes that act as the server's own demo shop (launch its promos, rename it, end its practice games, update its
+ * orders). With Privy on (the deployed site) real owners sign for themselves, so these are only for the project's
+ * scripts, which send DEMO_API_KEY as `x-demo-key`. Without Privy (a local demo) they stay open.
+ */
+export function requireDemoAccess(req: Request): void {
+  if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) return;
+  const key = process.env.DEMO_API_KEY;
+  const given = req.headers.get('x-demo-key');
+  const digest = (v: string) => createHash('sha256').update(v).digest();
+  if (key && given && timingSafeEqual(digest(key), digest(given))) return;
+  throw new HttpError(403, 'Sign in to manage your own shop. (The demo shop is only for the project’s test scripts.)');
 }
 
 /** Sign a UTF-8 message as the demo merchant (demo shop only, when Privy isn't configured). base58 ed25519. */

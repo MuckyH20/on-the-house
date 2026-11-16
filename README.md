@@ -1,20 +1,45 @@
 # On the House
 
-**Run promos like "your coffee is free if Bitcoin is above $71,000 at 8 PM" —
-without betting the shop.**
+**"Your order is free if the Spurs win" — without the shop betting the
+register on it.**
 
-Shops love promos tied to real events. The problem is risk: if the event
-happens, the shop owes everyone a refund. On the House turns that into a small,
-fixed cost per sale that the shop sees before launching.
+**Live demo: https://on-the-house-gamma.vercel.app**
+
+Shops love game-day promos. The problem is risk: if the team wins, the shop owes
+everyone a refund, and one good night can wipe out a month of margin. On the
+House turns that into a small, fixed cost per sale that the shop sees before
+launching.
 
 Here's the idea: every time a customer buys something, we buy a
-prediction-market contract that pays out if the event happens. If it does, that
-payout refunds the customer. If it doesn't, the shop only paid a small premium.
+prediction-market contract that pays out if the team wins. If they win, that
+payout refunds the customer. If they lose, the shop only paid a small premium.
 
 Built for the University Blockchain Conference 2026 hackathon (Consumer
-Applications) using **Solana**, **Gemini Prediction Markets** and **QuickNode
-Streams**. Everything runs on Solana devnet and the Gemini sandbox with test
-money.
+Applications) using **Solana**, **Gemini Prediction Markets**, **QuickNode
+Streams** and **Privy**. Everything runs on Solana devnet and the Gemini sandbox
+with test money.
+
+### Try it in two minutes
+
+1. Open the live demo and tap **Start a promo**. Sign in with Google.
+2. Add a shop name and menu, keep the suggested game, and launch. You get a link
+   and a printable QR sign.
+3. Open the promo link on your phone (or scan the sign), tap **Add $20 (demo)**,
+   and pay for something.
+4. Tap **How refunds are guaranteed** at the bottom. You'll see the sale go from
+   payment to QuickNode to Gemini to Solana, with real timings (usually under
+   two seconds).
+5. On a practice game, end the game as a win from **My promos**. The customer's
+   refund lands on their phone a few seconds later.
+
+### Where to look, per sponsor
+
+| | In the product | In the code |
+|---|---|---|
+| **Solana** | Every sale, hedge, result and refund links to Solana Explorer | [`programs/on_the_house`](programs/on_the_house) (Anchor, Token-2022 claims, on-chain risk cap) |
+| **Gemini** | "Gemini's own records" on each promo's protection page | [`engine/src/hedger.ts`](engine/src/hedger.ts), [`engine/src/venue/gemini-sandbox.ts`](engine/src/venue/gemini-sandbox.ts), `pnpm verify:orders` |
+| **QuickNode** | "Delivered by QuickNode Streams +1.4 s" on the protection page | [`engine/quicknode/filter.js`](engine/quicknode/filter.js), [`engine/src/quicknode.ts`](engine/src/quicknode.ts) (signed webhook) |
+| **Privy** | Google sign-in for shops and (optionally) customers, with a wallet created behind the scenes | [`app/src/lib/owner-privy.tsx`](app/src/lib/owner-privy.tsx) (loaded only when needed) |
 
 ---
 
@@ -33,12 +58,13 @@ money.
 
 The Solana program records each sale and the refund it owes.
 
-1. **The shop picks an event and a refund.** For example: 100% back if BTC is
-   above $71,000 at 8 PM. The app shows the cost right away — *"This promo costs
-   you 27.5% of each sale."*
+1. **The shop picks a game and a refund.** For example: the order is free if the
+   Spurs win tonight. The app shows the cost right away — *"You pay 27.5% of each
+   sale: $1.24 on a $4.50 latte."* (Gemini's sandbox mostly lists crypto markets,
+   so in the demo the "team" is often Bitcoin or Ethereum finishing up.)
 2. **A customer scans the counter sign, orders and pays on their phone** — like
-   any order-ahead. They get an order number and a receipt that says *"If BTC is
-   above $71,000, you get $4.00 back."* Staff see the order on the shop's
+   any order-ahead. They get an order number and a receipt that says *"If the
+   Spurs win, you get $4.50 back."* Staff see the order on the shop's
    **Orders** screen and hand it over by number. Behind the scenes the customer
    also gets a refund token that can't be transferred (signing in with
    email/Google is optional and keeps rewards on any device).

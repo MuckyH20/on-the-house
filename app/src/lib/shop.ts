@@ -13,15 +13,19 @@ export const DEFAULT_ITEMS: ShopItem[] = [
 export const DEMO_SHOP: Omit<ShopProfile, 'merchant' | 'updatedAt'> = { name: 'UBC Coffee Cart', items: DEFAULT_ITEMS };
 export const PLATFORM_MARGIN_BPS = 1000;
 
+/** Signed in, but Privy is still creating the account's wallet (a few seconds after the first sign-in). */
+const NOT_READY = 'Your account is still getting ready. Try again in a few seconds.';
+
 export async function loadShop(address: string): Promise<ShopProfile | null> {
   return engine<ShopProfile>(`/shops/${address}`).catch(() => null);
 }
 
 /** Save name + menu. Privy owners sign the change with their own wallet; the demo shop is signed by the server. */
 export async function saveShop(owner: Owner, name: string, items: ShopItem[]): Promise<ShopProfile> {
-  if (owner.mode === 'demo' || !owner.signMessage || !owner.address) {
+  if (owner.mode === 'demo') {
     return getJson<ShopProfile>('/api/shop', { method: 'PUT', body: JSON.stringify({ name, items }) });
   }
+  if (!owner.signMessage || !owner.address) throw new Error(NOT_READY);
   const timestamp = Date.now();
   const signature = await owner.signMessage(shopSaveMessage(owner.address, name, items, timestamp));
   return engine<ShopProfile>(`/shops/${owner.address}`, { method: 'PUT', body: JSON.stringify({ name, items, timestamp, signature }) });
@@ -38,9 +42,10 @@ export interface LaunchParams {
 
 /** Launch a promo. Privy owners co-sign the launch with their wallet (we pay the fees). */
 export async function launchPromo(owner: Owner, p: LaunchParams): Promise<{ campaign: string }> {
-  if (owner.mode === 'demo' || !owner.signTransaction || !owner.address) {
+  if (owner.mode === 'demo') {
     return getJson<{ campaign: string }>('/api/campaigns', { method: 'POST', body: JSON.stringify(p) });
   }
+  if (!owner.signTransaction || !owner.address) throw new Error(NOT_READY);
   const built = await getJson<{ campaign: string; transaction: string }>('/api/campaigns', {
     method: 'POST',
     body: JSON.stringify({ ...p, merchant: owner.address }),
@@ -106,9 +111,10 @@ export function cents(baseUnits: bigint | string | number): bigint {
 
 /** Mark an order ready / picked up. Privy owners sign with their wallet; the demo shop is signed by the server. */
 export async function setOrderStatus(owner: Owner, orderSig: string, status: OrderStatus): Promise<ShopOrder> {
-  if (owner.mode === 'demo' || !owner.signMessage || !owner.address) {
+  if (owner.mode === 'demo') {
     return getJson<ShopOrder>('/api/order-status', { method: 'PUT', body: JSON.stringify({ signature: orderSig, status }) });
   }
+  if (!owner.signMessage || !owner.address) throw new Error(NOT_READY);
   const timestamp = Date.now();
   const signature = await owner.signMessage(orderStatusMessage(owner.address, orderSig, status, timestamp));
   return engine<ShopOrder>(`/orders/${orderSig}/status`, { method: 'PUT', body: JSON.stringify({ status, timestamp, signature }) });
@@ -116,10 +122,11 @@ export async function setOrderStatus(owner: Owner, orderSig: string, status: Ord
 
 /** End a practice game now (signed by the shop, like order updates). */
 export async function finishPractice(owner: Owner, campaign: string, outcome: 'yes' | 'no'): Promise<void> {
-  if (owner.mode === 'demo' || !owner.signMessage || !owner.address) {
+  if (owner.mode === 'demo') {
     await getJson('/api/practice-finish', { method: 'POST', body: JSON.stringify({ campaign, outcome }) });
     return;
   }
+  if (!owner.signMessage || !owner.address) throw new Error(NOT_READY);
   const timestamp = Date.now();
   const signature = await owner.signMessage(practiceFinishMessage(owner.address, campaign, outcome, timestamp));
   await engine(`/campaigns/${campaign}/practice-finish`, { method: 'POST', body: JSON.stringify({ outcome, timestamp, signature }) });

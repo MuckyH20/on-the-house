@@ -43,6 +43,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
   const origins = env.CORS_ORIGINS.trim() === '*' ? true : env.CORS_ORIGINS.split(',').map((s) => s.trim());
   await app.register(cors, { origin: origins, methods: ['GET', 'HEAD', 'POST', 'PUT'] });
   const simulated = simulatedFlags(env);
+  const startedAt = Date.now();
   /** Practice games (SIM-…) are simulated even when the engine trades on the real sandbox. */
   const flagsFor = (symbol: string): SimulatedFlags =>
     symbol.startsWith('SIM-') ? { gemini: true, resolution: true } : simulated;
@@ -107,8 +108,12 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     };
   }
 
-  app.get('/health', async (): Promise<EngineInfo & { salesCutoffMinutes: number }> => ({
+  // QuickNode Streams deliveries since this engine started (shown on /health so the stream can be checked live).
+  const qn = { deliveries: 0, transactions: 0, fresh: 0, rejected: 0, lastDeliveryAt: null as number | null, lastFreshAt: null as number | null };
+
+  app.get('/health', async (): Promise<EngineInfo & { salesCutoffMinutes: number; quicknode: typeof qn & { since: number } }> => ({
     salesCutoffMinutes: env.SALES_CUTOFF_MINUTES,
+    quicknode: { ...qn, since: startedAt },
     ok: true,
     cluster: chain.cluster,
     programId: chain.programId.toBase58(),
@@ -407,6 +412,7 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       const h = (n: string) => (req.headers[n] as string | undefined) ?? undefined;
       const v = verifyQuickNode({ token, nonce: h('x-qn-nonce'), timestamp: h('x-qn-timestamp'), signature: h('x-qn-signature'), payload, nonces });
       if (!v.ok) {
+        qn.rejected++;
         d.log.warn({ reason: v.reason }, 'quicknode webhook rejected');
         return reply.code(401).send({ error: v.reason });
       }
@@ -419,6 +425,11 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
       const txs = extractTransactions(body);
       let fresh = 0;
       for (const tx of txs) fresh += await d.ingest.ingestLogs({ ...tx, source: 'quicknode' });
+      qn.deliveries++;
+      qn.transactions += txs.length;
+      qn.fresh += fresh;
+      qn.lastDeliveryAt = Date.now();
+      if (fresh) qn.lastFreshAt = qn.lastDeliveryAt;
       d.log.info({ transactions: txs.length, fresh }, 'quicknode delivery');
       // 2xx tells Streams the batch is delivered (it retries otherwise).
       return { ok: true, transactions: txs.length, fresh };

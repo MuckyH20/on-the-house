@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { PrivyProvider, usePrivy } from '@privy-io/react-auth';
-import { useSignMessage, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
-import bs58 from 'bs58';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
+
+// Privy (and the wallet kits it bundles) loads only when a page needs it. See owner-privy.tsx.
+const PrivyBridge = dynamic(() => import('./owner-privy').then((m) => m.PrivyBridge), { ssr: false });
 
 /**
  * The shop owner, wherever their wallet lives:
@@ -37,49 +38,47 @@ const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? '';
 /** Is Privy configured (real sign-in), or is this the single demo shop? */
 export const privyEnabled = () => !!PRIVY_APP_ID;
 
-export function OwnerProvider({ children, title = 'Sign in to your shop', demo = true }: { children: ReactNode; title?: string; demo?: boolean }) {
-  if (!PRIVY_APP_ID) return demo ? <DemoOwner>{children}</DemoOwner> : <NoAccount>{children}</NoAccount>;
-  return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        loginMethods: ['email', 'google'],
-        appearance: { walletChainType: 'solana-only', accentColor: '#b45309', theme: 'light', landingHeader: title },
-        embeddedWallets: { solana: { createOnLogin: 'users-without-wallets' } },
-      }}
-    >
-      <PrivyOwner>{children}</PrivyOwner>
-    </PrivyProvider>
-  );
+/** A previous Privy sign-in on this device (Privy keeps its session in localStorage). */
+function hasPrivySession(): boolean {
+  try {
+    return !!(localStorage.getItem('privy:token') || localStorage.getItem('privy:refresh_token'));
+  } catch {
+    return false;
+  }
 }
 
-function PrivyOwner({ children }: { children: ReactNode }) {
-  const { ready, authenticated, user, login, logout } = usePrivy();
-  const { wallets, ready: walletsReady } = useWallets();
-  const { signTransaction } = useSignTransaction();
-  const { signMessage } = useSignMessage();
-  const wallet = wallets[0] ?? null;
+/**
+ * Owner pages (`demo`, the default) load Privy right away: they need the owner's account. Customer pages
+ * (`demo={false}`) load it only for a returning signed-in customer or when "Sign in" is tapped, so a QR scan
+ * downloads far less JavaScript.
+ */
+export function OwnerProvider({ children, title = 'Sign in to your shop', demo = true }: { children: ReactNode; title?: string; demo?: boolean }) {
+  if (!PRIVY_APP_ID) return demo ? <DemoOwner>{children}</DemoOwner> : <NoAccount>{children}</NoAccount>;
+  return <LazyPrivyOwner title={title} eager={demo}>{children}</LazyPrivyOwner>;
+}
 
-  const value = useMemo<Owner>(
-    () => ({
-      mode: 'privy',
-      ready: ready && (!authenticated || walletsReady),
-      authenticated,
-      address: wallet?.address ?? null,
-      label: user?.email?.address ?? user?.google?.email ?? null,
-      login,
-      logout,
-      signTransaction: wallet
-        ? async (tx) => (await signTransaction({ transaction: tx, wallet, options: { uiOptions: { showWalletUIs: false } } })).signedTransaction
-        : null,
-      signMessage: wallet
-        ? async (text) =>
-            bs58.encode((await signMessage({ message: new TextEncoder().encode(text), wallet, options: { uiOptions: { showWalletUIs: false } } })).signature)
-        : null,
-    }),
-    [ready, authenticated, walletsReady, wallet, user, login, logout, signTransaction, signMessage],
+function LazyPrivyOwner({ children, title, eager }: { children: ReactNode; title: string; eager: boolean }) {
+  const [load, setLoad] = useState(eager);
+  const [loginRequests, setLoginRequests] = useState(0);
+  const [owner, setOwner] = useState<Owner | null>(null);
+  useEffect(() => {
+    if (!eager && hasPrivySession()) setLoad(true);
+  }, [eager]);
+  const requestLogin = useCallback(() => {
+    setLoad(true);
+    setLoginRequests((n) => n + 1);
+  }, []);
+  // Until Privy reports in: owner pages wait (not ready); customer pages carry on signed out.
+  const placeholder = useMemo<Owner>(
+    () => ({ mode: 'privy', ready: !eager, authenticated: false, address: null, label: null, login: requestLogin, logout: async () => {}, signTransaction: null, signMessage: null }),
+    [eager, requestLogin],
   );
-  return <OwnerContext.Provider value={value}>{children}</OwnerContext.Provider>;
+  return (
+    <>
+      <OwnerContext.Provider value={owner ?? placeholder}>{children}</OwnerContext.Provider>
+      {load ? <PrivyBridge appId={PRIVY_APP_ID} title={title} onChange={setOwner} loginRequests={loginRequests} /> : null}
+    </>
+  );
 }
 
 /** Customer pages without Privy: no accounts at all (device wallet only). */

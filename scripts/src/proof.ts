@@ -100,7 +100,9 @@ function ref(file: string, needle: string): string {
 // ---------------------------------------------------------------- HTTP helpers
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { ...init, headers: { 'content-type': 'application/json', ...init?.headers } });
+  // The deployed site only lets the project's own scripts act as the demo shop (DEMO_API_KEY, sent to the app only).
+  const demoKey = process.env.DEMO_API_KEY && url.startsWith(APP) ? { 'x-demo-key': process.env.DEMO_API_KEY } : {};
+  const res = await fetch(url, { ...init, headers: { 'content-type': 'application/json', ...demoKey, ...init?.headers } });
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };
   if (!res.ok) throw new Error(`${init?.method ?? 'GET'} ${url} → ${res.status}: ${body.error ?? ''}`);
   return body;

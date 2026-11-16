@@ -2,7 +2,7 @@ import { createPrivateKey, sign } from 'node:crypto';
 import bs58 from 'bs58';
 import { z } from 'zod';
 import { shopSaveMessage, type ShopProfile } from '@oth/shared/api';
-import { engineFetch, HttpError, jsonError, serverCtx } from '@/lib/server';
+import { engineFetch, HttpError, jsonError, requireDemoAccess, serverCtx } from '@/lib/server';
 
 /**
  * Save the DEMO shop's profile (no Privy configured): the server signs for the demo merchant wallet.
@@ -17,6 +17,7 @@ const Body = z.object({
 
 export async function PUT(req: Request) {
   try {
+    requireDemoAccess(req);
     const parsed = Body.safeParse(await req.json().catch(() => null));
     if (!parsed.success) throw new HttpError(400, parsed.error.issues.map((i) => i.message).join('; '));
     const { merchant } = await serverCtx();

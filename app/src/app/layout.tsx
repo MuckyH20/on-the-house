@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Big_Shoulders, Schibsted_Grotesk } from 'next/font/google';
+import Script from 'next/script';
+import { Intro } from '@/components/Intro';
 import { SiteFooter, SiteHeader } from '@/components/SiteHeader';
 import './globals.css';
 
@@ -32,8 +34,13 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, them
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${shoulders.variable} ${schibsted.variable}`}>
+    <html lang="en" className={`${shoulders.variable} ${schibsted.variable}`} suppressHydrationWarning>
       <body className="flex min-h-dvh flex-col">
+        {/* Before first paint: mark JS as running (scroll reveals only hide content then) and play the intro once per visit. */}
+        <Script id="motion-flags" strategy="beforeInteractive">
+          {`try{var d=document.documentElement;d.classList.add('js');if(sessionStorage.getItem('oth-intro'))d.setAttribute('data-intro-seen','');else sessionStorage.setItem('oth-intro','1')}catch(e){document.documentElement.setAttribute('data-intro-seen','')}`}
+        </Script>
+        <Intro />
         <SiteHeader />
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6 sm:px-8 sm:py-10">{children}</main>
         <SiteFooter />

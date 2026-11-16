@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { HeroScoreboard } from '@/components/HeroScoreboard';
+import { Reveal } from '@/components/Reveal';
 import { Ribbon } from '@/components/Ribbon';
 import { ButtonLink } from '@/components/ui';
 
@@ -47,32 +48,32 @@ const RECEIPT = [
 
 export default function Home() {
   return (
-    <div className="-mt-6 sm:-mt-10">
+    <div className="landing -mt-6 sm:-mt-10">
       {/* ------------------------------------------------ Floodlit hero + match timeline */}
       <section className="night on-night bleed">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-12 sm:px-8 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pb-24">
-          <div className="animate-fade-up">
-            <h1 className="t-display">Free if your team wins.</h1>
-            <p className="mt-4 font-display text-[1.75rem] font-extrabold uppercase leading-none text-floodlight sm:text-[2.5rem]">You never pay the refund.</p>
-            <p className="t-body mt-6 max-w-[34rem] text-chalk-muted">
+          <div>
+            <h1 className="t-display enter enter-1">Free if your team wins.</h1>
+            <p className="enter enter-2 mt-4 font-display text-[1.75rem] font-extrabold uppercase leading-none text-floodlight sm:text-[2.5rem]">You never pay the refund.</p>
+            <p className="t-body enter enter-3 mt-6 max-w-[34rem] text-chalk-muted">
               Cafés, bars and local shops: run a “free if your team wins” promo on game day. You pay a set share of each promo
               order, locked in before you start. If your team wins, every customer’s refund is paid by us.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/start" variant="flood" size="lg">Start your promo <span aria-hidden="true">→</span></ButtonLink>
+            <div className="enter enter-4 mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/start" variant="flood" size="lg">Start your promo <span className="btn-arrow" aria-hidden="true">→</span></ButtonLink>
               <ButtonLink href="#how" variant="night" size="lg">How it works</ButtonLink>
             </div>
-            <p className="mt-4 text-sm text-chalk-muted">About 2 minutes · No crypto needed · Sign in with Google</p>
+            <p className="enter enter-4 mt-4 text-sm text-chalk-muted">About 2 minutes · No crypto needed · Sign in with Google</p>
           </div>
-          <HeroScoreboard />
+          <HeroScoreboard className="enter-board" />
         </div>
 
         <Ribbon />
 
         <div id="how" className="mx-auto max-w-6xl scroll-mt-20 px-5 pb-20 sm:px-8 sm:pb-24">
           <div className="pt-16">
-            <h2 className="t-h2 max-w-xl">How a game night works</h2>
-            <ol className="mt-10 grid gap-8 md:grid-cols-3">
+            <Reveal as="h2" className="t-h2 reveal max-w-xl">How a game night works</Reveal>
+            <Reveal as="ol" className="clock-line reveal-stagger mt-10 grid gap-8 md:grid-cols-3">
               {TIMELINE.map((s, i) => (
                 <li key={s.phase} className="clock-step" data-final={i === TIMELINE.length - 1}>
                   <span className="clock-dot" aria-hidden="true" />
@@ -81,7 +82,7 @@ export default function Home() {
                   <p className="t-small mt-1.5 max-w-sm text-chalk-muted">{s.body}</p>
                 </li>
               ))}
-            </ol>
+            </Reveal>
             <p className="mt-12 text-sm text-chalk-muted">
               Runs on Solana, Gemini prediction markets, QuickNode and Privy. Every promise is public on-chain.
             </p>
@@ -91,16 +92,17 @@ export default function Home() {
 
       {/* ------------------------------------------------ Cost, as the receipt it really is */}
       <section className="grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-2 lg:gap-16">
-        <div>
+        <Reveal className="reveal">
           <h2 className="t-h2">The same small cost, win or lose.</h2>
           <p className="t-body mt-5 max-w-md text-muted">
             The price comes from a live prediction market: the less likely your team is to win, the cheaper the promo. You set
             the most you’ll pay, and sales pause on their own if the price moves past it.
           </p>
           <Link href="/help" className="link mt-5 inline-block">Read the 1-minute guide →</Link>
-        </div>
+        </Reveal>
 
-        <figure className="ticket mx-auto w-full max-w-md lg:mr-0" aria-label="Example receipt">
+        <Reveal className="mx-auto w-full max-w-md lg:mr-0">
+        <figure className="ticket print-in" aria-label="Example receipt">
           <div className="px-6 pb-6 pt-5">
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-display text-2xl font-extrabold uppercase">Bean There Café</span>
@@ -129,25 +131,26 @@ export default function Home() {
             <p className="mt-1 font-bold text-ink">The customer gets $4.50 back. All $450 of refunds are paid by us.</p>
           </div>
         </figure>
+        </Reveal>
       </section>
 
       {/* ------------------------------------------------ The questions every owner asks */}
       <section className="border-t border-line py-16 sm:py-20">
-        <h2 className="t-h2">Questions shop owners ask</h2>
-        <dl className="mt-8 grid gap-x-12 gap-y-8 md:grid-cols-2">
+        <Reveal as="h2" className="t-h2 reveal">Questions shop owners ask</Reveal>
+        <Reveal as="dl" className="reveal-stagger mt-8 grid gap-x-12 gap-y-8 md:grid-cols-2">
           {FAQ.map((f) => (
             <div key={f.q}>
               <dt className="t-h3">{f.q}</dt>
               <dd className="t-body mt-2 max-w-prose text-muted">{f.a}</dd>
             </div>
           ))}
-        </dl>
+        </Reveal>
         <Link href="/help" className="link mt-8 inline-block">All questions →</Link>
       </section>
 
       {/* ------------------------------------------------ Close */}
       <section className="flex flex-col items-start justify-between gap-6 border-t border-line pt-12 sm:flex-row sm:items-end">
-        <h2 className="t-display max-w-2xl text-[3rem] sm:text-[4.5rem]">Ready for game day?</h2>
+        <Reveal as="h2" className="t-display reveal max-w-2xl text-[3rem] sm:text-[4.5rem]">Ready for game day?</Reveal>
         <div className="flex flex-col gap-3 sm:flex-row">
           <ButtonLink href="/start" size="lg">Start your promo</ButtonLink>
           <ButtonLink href="/help" variant="secondary" size="lg">Read the guide</ButtonLink>

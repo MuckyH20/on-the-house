@@ -373,6 +373,41 @@
 
   /* Every page fades in on navigation (opacity only, so fixed and sticky children keep working). */
   .page-in { animation: page-in 0.4s ease-out both; }
+
+  /* ---- Counter sign poster (Letter, 8.5 x 11 in). Sizes are cqw of the sheet so preview and print match. ---- */
+  .poster {
+    width: min(100%, 8.5in); aspect-ratio: 8.5 / 11; container-type: inline-size;
+    display: flex; flex-direction: column; overflow: hidden;
+    background: #fff; color: var(--color-ink); border-radius: 12px; box-shadow: var(--shadow-raised);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .poster-band { padding: 7.5cqw 7cqw 6.5cqw; text-align: center; }
+  .poster-offer { font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 10.6cqw; line-height: 0.88; text-wrap: balance; }
+  .poster-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4cqw 8cqw 2cqw; text-align: center; }
+  .poster-board {
+    display: flex; align-items: center; gap: 2.4cqw; max-width: 84cqw;
+    background: var(--color-night-deep); color: var(--color-chalk); border-radius: 2.2cqw; padding: 1.8cqw 3.4cqw 1.8cqw 2cqw;
+  }
+  .poster-mark { width: 7.4cqw; height: 7.4cqw; flex-shrink: 0; display: grid; place-items: center; border-radius: 999px; font-size: 3.2cqw; }
+  .poster-matchup { font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 4.6cqw; line-height: 0.95; }
+  .poster-final { margin-top: 0.7cqw; font-size: 1.7cqw; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-chalk-muted); }
+  .poster-qr { position: relative; width: 42cqw; aspect-ratio: 1; margin-top: 5cqw; padding: 2.6cqw; }
+  .poster-qr > a, .poster-qr > div { display: block; width: 100%; height: 100%; }
+  .poster-corner { position: absolute; width: 6cqw; height: 6cqw; border: 0 solid var(--color-floodlight); }
+  .poster-corner-tl { top: 0; left: 0; border-top-width: 1cqw; border-left-width: 1cqw; border-top-left-radius: 2cqw; }
+  .poster-corner-tr { top: 0; right: 0; border-top-width: 1cqw; border-right-width: 1cqw; border-top-right-radius: 2cqw; }
+  .poster-corner-bl { bottom: 0; left: 0; border-bottom-width: 1cqw; border-left-width: 1cqw; border-bottom-left-radius: 2cqw; }
+  .poster-corner-br { bottom: 0; right: 0; border-bottom-width: 1cqw; border-right-width: 1cqw; border-bottom-right-radius: 2cqw; }
+  .poster-scan { margin-top: 4cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 7.4cqw; line-height: 1; }
+  .poster-note { margin-top: 1.6cqw; max-width: 64cqw; font-size: 2.1cqw; line-height: 1.4; color: var(--color-muted); text-wrap: balance; }
+  .poster-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 3cqw;
+    margin: 0 6cqw; padding: 3cqw 1cqw 4.4cqw; border-top: 0.3cqw dashed var(--color-line-strong);
+  }
+  .poster-shop { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 4.8cqw; line-height: 1; }
+  .poster-small { margin-top: 0.6cqw; font-size: 1.7cqw; color: var(--color-subtle); }
+  .poster-brand { display: flex; flex-shrink: 0; align-items: center; gap: 1.2cqw; font-family: var(--font-display); font-variation-settings: "opsz" 72; font-weight: 800; text-transform: uppercase; font-size: 3cqw; white-space: nowrap; }
+  .poster-brand svg { width: 4.6cqw; height: 4.6cqw; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -388,5 +423,15 @@
 
 @media print {
   html, body { background: #fff; }
+  /* The counter sign prints edge to edge on one Letter page. Zero page margins also make browsers drop their own
+     header/footer (title, date, URL). */
+  @page { size: letter portrait; margin: 0; }
+  html:has(.poster), body:has(.poster) { height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; }
+  body:has(.poster) { display: block !important; }
+  main:has(.poster) { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .poster-wrap { padding: 0 !important; gap: 0 !important; display: block !important; }
+  /* A hair under the sheet height so rounding can never spill a blank second page. */
+  .poster { width: 8.5in; height: 10.98in; aspect-ratio: auto; border-radius: 0; box-shadow: none; break-inside: avoid; break-after: avoid; }
+  body:has(.poster) .page-in { animation: none; }
   .ticket-tear::before, .ticket-tear::after { background: #fff; }
 }

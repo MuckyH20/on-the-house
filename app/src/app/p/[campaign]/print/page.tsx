@@ -2,16 +2,20 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Printer } from 'lucide-react';
 import type { CampaignState, ShopProfile } from '@oth/shared/api';
-import { TeamMark } from '@/components/GameCard';
 import { Mark } from '@/components/Brand';
 import { Qr } from '@/components/Qr';
 import { Button, PageSkeleton } from '@/components/ui';
 import { engine } from '@/lib/client';
-import { gameFor } from '@/lib/game';
+import { gameFor, type Game } from '@/lib/game';
 import { DEMO_SHOP } from '@/lib/shop';
 
-/** A counter sign: the offer in big type plus a QR code to the promo page. Print it or show it on a tablet. */
+/**
+ * The counter sign: a full Letter-size poster (offer, game, big QR, shop). Every size inside is relative to the
+ * sheet (cqw), so the on-screen preview and the printout match. Print styles (globals.css, .poster) drop the
+ * browser's own header/footer by printing with zero page margins.
+ */
 export default function PrintPage() {
   const { campaign } = useParams<{ campaign: string }>();
   const [state, setState] = useState<CampaignState | null>(null);
@@ -28,39 +32,77 @@ export default function PrintPage() {
   const game = gameFor(state?.market ?? null);
   if (!state || !game || !origin) return <PageSkeleton cards={1} />;
   const pct = state.campaign.refundBps / 100;
+  const offer = pct >= 100 ? 'Your order is free' : `${pct}% back on your order`;
+
   return (
-    <div className="mx-auto flex min-h-[88vh] max-w-xl flex-col items-center justify-center py-6 text-center">
-      <div className="ticket w-full print:border-0 print:shadow-none">
-        <div className="px-6 pb-8 pt-10 sm:px-12 sm:pt-12">
-          <h1 className="font-display text-[3.25rem] font-extrabold uppercase leading-[0.9] sm:text-[4.5rem]">
-            {pct >= 100 ? 'Your order is free' : `${pct}% back`}
-            <span className="mt-1 block text-brand">if {game.team} wins</span>
+    <div className="poster-wrap flex flex-col items-center gap-5 py-2">
+      <div className="poster">
+        {/* Floodlit band: the offer */}
+        <header className="poster-band night on-night">
+          <h1 className="poster-offer">
+            {offer}
+            <span className="block text-floodlight">if {game.team} wins</span>
           </h1>
-          <div className="on-night mx-auto mt-7 flex max-w-sm items-center gap-3 rounded-2xl bg-night-deep px-4 py-3 text-left text-chalk print:bg-white print:text-ink print:ring-2 print:ring-ink">
-            <TeamMark game={game} size={40} />
-            <div className="min-w-0">
-              <div className="font-display text-2xl font-extrabold uppercase leading-none">{game.matchup}</div>
-              {game.finalAt ? <div className="board-label mt-1 print:text-muted">Final {game.finalAt}</div> : null}
+        </header>
+
+        <div className="poster-body">
+          {/* The game, as a scoreboard strip */}
+          <div className="poster-board on-night">
+            <PosterTeamMark game={game} />
+            <div className="min-w-0 text-left">
+              <div className="poster-matchup">{game.matchup}</div>
+              {game.finalAt ? <div className="poster-final">Final {game.finalAt}</div> : null}
             </div>
           </div>
-          <div className="mt-8 flex justify-center">
-            <Qr value={`${origin}/p/${campaign}`} size={240} className="ring-1 ring-line" />
+
+          {/* The QR, framed by corner brackets */}
+          <div className="poster-qr">
+            <span className="poster-corner poster-corner-tl" aria-hidden="true" />
+            <span className="poster-corner poster-corner-tr" aria-hidden="true" />
+            <span className="poster-corner poster-corner-bl" aria-hidden="true" />
+            <span className="poster-corner poster-corner-br" aria-hidden="true" />
+            <Qr value={`${origin}/p/${campaign}`} size="100%" className="!rounded-none !p-0" />
           </div>
-          <p className="t-h2 mt-6">Scan to order</p>
-          <p className="mx-auto mt-2 max-w-sm text-muted">If {game.team} wins, your money comes back automatically. No app, nothing to sign up for.</p>
+
+          <p className="poster-scan">Scan to order</p>
+          <p className="poster-note">
+            Pay the normal price. If {game.team} wins, your money comes back to your phone automatically. No app needed.
+          </p>
         </div>
-        <div className="ticket-tear flex items-center justify-between gap-4 px-6 py-4 text-left">
-          <div>
-            <p className="font-display text-2xl font-extrabold uppercase">{shopName}</p>
-            <p className="text-sm text-subtle">Game-day promo</p>
+
+        <footer className="poster-foot">
+          <div className="min-w-0">
+            <div className="poster-shop">{shopName}</div>
+            <div className="poster-small">Game-day promo</div>
           </div>
-          <div className="flex items-center gap-1.5 text-ink">
-            <Mark size={22} />
-            <span className="font-display text-lg font-extrabold uppercase">On the House</span>
+          <div className="poster-brand">
+            <Mark size={28} className="text-ink" />
+            <span>
+              On <span className="font-semibold opacity-60">the</span> House
+            </span>
           </div>
-        </div>
+        </footer>
       </div>
-      <Button onClick={() => window.print()} variant="dark" size="lg" className="mt-6 print:hidden">Print this sign</Button>
+
+      <div className="flex flex-col items-center gap-2 print:hidden">
+        <Button onClick={() => window.print()} variant="dark" size="lg">
+          <Printer className="h-5 w-5" aria-hidden="true" /> Print this sign
+        </Button>
+        <p className="max-w-sm text-center text-sm text-muted">Letter size. If the colors don’t print, turn on “Background graphics” in the print dialog.</p>
+      </div>
+    </div>
+  );
+}
+
+/** Team logo or monogram, sized relative to the sheet. */
+function PosterTeamMark({ game }: { game: Game }) {
+  return game.logo ? (
+    <div className="poster-mark bg-white">
+      <img src={game.logo} alt="" className="h-[78%] w-[78%] object-contain" />
+    </div>
+  ) : (
+    <div className="poster-mark font-display font-extrabold text-white" style={{ background: game.color }} aria-hidden="true">
+      {game.mark}
     </div>
   );
 }

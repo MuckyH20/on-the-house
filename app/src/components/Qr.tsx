@@ -7,7 +7,7 @@ import QRCode from 'qrcode';
  * A plain, high-contrast QR code for any URL (no logos — it should look like any shop QR).
  * Clickable: on a desktop you can't scan your own screen, so clicking opens the link in a new tab.
  */
-export function Qr({ value, size = 220, className = '', clickable = true }: { value: string; size?: number; className?: string; clickable?: boolean }) {
+export function Qr({ value, size = 220, className = '', clickable = true }: { value: string; size?: number | string; className?: string; clickable?: boolean }) {
   const [svg, setSvg] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;

@@ -1,0 +1,16 @@
+# Never upload secrets or local data to Vercel.
+.env
+.env.*
+!.env.example
+app/.env.local
+app/.env*.local
+.keys
+engine/data
+docs/local
+docs/SPEC.md
+docs/PROGRESS.md
+docs/research
+target
+node_modules
+app/.next
+.railwayignore

@@ -1,0 +1,12 @@
+# Never upload secrets or local data to Railway (in addition to .gitignore).
+.env
+.env.*
+!.env.example
+app/.env.local
+.keys/
+engine/data/
+docs/local/
+target/
+node_modules/
+**/node_modules/
+app/.next/

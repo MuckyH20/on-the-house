@@ -57,3 +57,6 @@ docs/local/
 
 # Local copies of vendor docs (reference only)
 docs/research/
+# Vercel CLI link and pulled env
+.vercel
+.env.local

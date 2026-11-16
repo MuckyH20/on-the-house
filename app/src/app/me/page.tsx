@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import { formatUsd } from '@oth/shared';
 import type { WalletClaim } from '@oth/shared/api';
 import { Ticket, Trophy } from 'lucide-react';
+import { playHorn } from '@/lib/sound';
 import { Button, Card, EmptyState, Pill, Simulated, Skeleton } from '@/components/ui';
 import { engine, short, useBurner, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
@@ -32,6 +34,13 @@ export default function MePage() {
   );
   const list = claims.data?.claims ?? [];
   const totalBack = list.reduce((s, c) => s + BigInt(c.paidOut), 0n);
+  const cheered = useRef(false);
+  useEffect(() => {
+    if (totalBack > 0n && !cheered.current) {
+      cheered.current = true;
+      playHorn(); // the team won: stadium horn
+    }
+  }, [totalBack]);
   const pending = list.filter((c) => c.status !== 'settled').reduce((s, c) => s + BigInt(c.claimBalance), 0n);
 
   return (

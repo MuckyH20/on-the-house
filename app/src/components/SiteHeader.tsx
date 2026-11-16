@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/Brand';
+import { SoundToggle } from '@/components/Sound';
 
 export { Logo };
 
@@ -21,7 +22,8 @@ export function SiteHeader() {
       <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:px-8">
         <Logo />
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Link href="/help" className={`btn btn-sm ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>Help</Link>
+          <SoundToggle className={`btn btn-sm w-10 px-0 ${night ? 'btn-ghost-night' : 'btn-ghost'}`} />
+          <Link href="/help" className={`btn btn-sm hidden min-[400px]:inline-flex ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>Help</Link>
           <Link href="/dashboard" className={`btn btn-sm ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>My promos</Link>
           {!onStart ? (
             <Link href="/start" className={`btn btn-sm hidden sm:inline-flex ${night ? 'btn-flood' : 'btn-primary'}`}>

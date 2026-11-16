@@ -9,6 +9,8 @@ import { formatUsd } from '@oth/shared';
 import type { CampaignState, Quote, ShopItem, ShopOrder, ShopProfile } from '@oth/shared/api';
 import { GameCard } from '@/components/GameCard';
 import { Mark } from '@/components/Brand';
+import { SoundToggle } from '@/components/Sound';
+import { playDing, playKaching } from '@/lib/sound';
 import { Minus, Plus, SearchX } from 'lucide-react';
 import { Button, EmptyState, Notice, PageSkeleton, Simulated, Spinner } from '@/components/ui';
 import { connection, engine, friendlyTxError, getJson, signAndSend, useBurner, usePoll } from '@/lib/client';
@@ -42,6 +44,9 @@ export default function PromoPage() {
   const [busy, setBusy] = useState<'pay' | 'faucet' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [receipt, setReceipt] = useState<{ amount: string; refund: string; signature: string; device: boolean } | null>(null);
+  useEffect(() => {
+    if (receipt) playKaching(); // paid: the register rings
+  }, [receipt?.signature]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showWallet, setShowWallet] = useState(false);
 
   const state = usePoll(() => engine<CampaignState>(`/campaigns/${campaign}/state`), 5_000, [campaign]);
@@ -250,6 +255,7 @@ export default function PromoPage() {
       <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-subtle">
         <Link href={`/proof/${campaign}`} className="link-muted">How refunds are guaranteed</Link>
         <span className="flex items-center gap-1.5">Powered by <Mark size={16} className="text-ink" /> <b className="font-display text-base font-extrabold uppercase text-ink">On the House</b></span>
+        <SoundToggle label className="link-muted mt-1 inline-flex items-center gap-1.5 no-underline" />
       </footer>
     </div>
   );
@@ -300,6 +306,12 @@ function WalletQr({ campaign, amount, items, refund, onPaid }: { campaign: strin
 function OrderStatusLine({ signature }: { signature: string }) {
   const order = usePoll(() => engine<ShopOrder>(`/orders/${signature}`), 4_000, [signature]);
   const status = order.data?.status ?? 'new';
+  // Ding on the customer's phone when staff mark the order ready (not when the page opens already ready).
+  const prev = useRef<string | null>(null);
+  useEffect(() => {
+    if (prev.current && prev.current !== 'ready' && status === 'ready') playDing();
+    prev.current = status;
+  }, [status]);
   const text = { new: 'Preparing your order — show this number at the counter.', ready: 'Ready for pickup ✓', done: 'Picked up — enjoy!' }[status];
   return (
     <div className={`notice flex items-center gap-2 ${status === 'ready' ? 'notice-good font-semibold' : 'bg-paper text-muted'}`} role="status" aria-live="polite">

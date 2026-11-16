@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Big_Shoulders, Schibsted_Grotesk } from 'next/font/google';
 import Script from 'next/script';
 import { Intro } from '@/components/Intro';
+import { SoundUnlock } from '@/components/Sound';
 import { SiteFooter, SiteHeader } from '@/components/SiteHeader';
 import './globals.css';
 
@@ -19,13 +20,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: 'On the House — free if your team wins',
   description,
+  // ?v= busts browsers' stubborn favicon cache whenever the mark changes.
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
-      { url: '/favicon-32.png', type: 'image/png', sizes: '32x32' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico?v=2', sizes: '16x16 32x32 48x48' },
+      { url: '/favicon-32.png?v=2', type: 'image/png', sizes: '32x32' },
+      { url: '/icon.svg?v=2', type: 'image/svg+xml' },
     ],
-    apple: '/apple-touch-icon.png',
+    apple: '/apple-touch-icon.png?v=2',
   },
   openGraph: {
     title: 'On the House — free if your team wins',
@@ -48,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {`try{var d=document.documentElement;d.classList.add('js');if(sessionStorage.getItem('oth-intro'))d.setAttribute('data-intro-seen','');else sessionStorage.setItem('oth-intro','1')}catch(e){document.documentElement.setAttribute('data-intro-seen','')}`}
         </Script>
         <Intro />
+        <SoundUnlock />
         <SiteHeader />
         <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-6 sm:px-8 sm:py-10">{children}</main>
         <SiteFooter />

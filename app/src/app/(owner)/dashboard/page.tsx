@@ -5,6 +5,7 @@ import { formatUsd } from '@oth/shared';
 import type { CampaignSummary } from '@oth/shared/api';
 import { TeamMark } from '@/components/GameCard';
 import { Megaphone, Plus, Trophy } from 'lucide-react';
+import { playHorn } from '@/lib/sound';
 import { Badge, Button, ButtonLink, CampaignStatus, EmptyState, Notice, PageSkeleton, Skeleton, Stat } from '@/components/ui';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
@@ -162,6 +163,7 @@ function PracticeFinish({ campaign, team }: { campaign: string; team: string }) 
     setBusy(true);
     try {
       await finishPractice(owner, campaign, outcome);
+      if (outcome === 'yes') playHorn();
       setDone(outcome === 'yes' ? `${team} wins — refunds are being paid…` : `${team} loses — you keep every sale.`);
     } catch (e) {
       setDone((e as Error).message);

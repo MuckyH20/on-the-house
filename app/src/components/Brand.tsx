@@ -22,7 +22,7 @@ export function Logo({ className = '', size = 30 }: { className?: string; size?:
   return (
     <Link href="/" className={`group flex items-center gap-2.5 ${className}`} aria-label="On the House, home">
       <Mark size={size} className="transition-transform duration-300 ease-[var(--ease-out)] group-hover:-translate-y-0.5" />
-      <span className="font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-[0.02em]">
+      <span className="whitespace-nowrap font-display text-[1.375rem] font-extrabold uppercase leading-none tracking-[0.02em]">
         On <span className="font-semibold opacity-70">the</span> House
       </span>
     </Link>

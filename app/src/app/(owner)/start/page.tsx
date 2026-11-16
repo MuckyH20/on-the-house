@@ -6,6 +6,7 @@ import { formatUsd, parseUsd } from '@oth/shared';
 import type { MarketSummary, ShopItem } from '@oth/shared/api';
 import { GameCard, TeamMark } from '@/components/GameCard';
 import { Hourglass, MonitorSmartphone, Pencil, Plus, Printer, Smartphone, Trophy, X } from 'lucide-react';
+import { playWhistle } from '@/lib/sound';
 import { Badge, Button, ButtonLink, EmptyState, Field, Notice, PageSkeleton, Simulated, Skeleton, SuccessBurst } from '@/components/ui';
 import { Qr } from '@/components/Qr';
 import { engine } from '@/lib/client';
@@ -350,6 +351,7 @@ function LiveStep({ campaign, shopName }: { campaign: string; shopName: string }
   const [origin, setOrigin] = useState('');
   const [copied, setCopied] = useState(false);
   useEffect(() => setOrigin(window.location.origin), []);
+  useEffect(() => playWhistle(), []); // live: the whistle blows
   const link = `${origin}/p/${campaign}`;
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator;
   return (

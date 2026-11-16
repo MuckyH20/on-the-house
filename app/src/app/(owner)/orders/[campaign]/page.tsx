@@ -7,6 +7,7 @@ import { formatUsd } from '@oth/shared';
 import type { CampaignState, OrderStatus, ShopOrder } from '@oth/shared/api';
 import { TeamMark } from '@/components/GameCard';
 import { CheckCheck, ReceiptText } from 'lucide-react';
+import { playDing } from '@/lib/sound';
 import { Badge, Button, ButtonLink, EmptyState, Notice, Skeleton } from '@/components/ui';
 import { engine, usePoll } from '@/lib/client';
 import { gameFor } from '@/lib/game';
@@ -39,6 +40,7 @@ export default function OrdersPage() {
     setError(null);
     try {
       await setOrderStatus(owner, o.signature, status);
+      if (status === 'ready') playDing();
       await orders.refresh();
     } catch (e) {
       setError((e as Error).message);

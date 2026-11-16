@@ -132,6 +132,10 @@ export default function Home() {
             <div className="t-label text-good">If the Spurs win</div>
             <p className="mt-1 font-bold text-ink">The customer gets $4.50 back. All $450 of refunds are paid by us.</p>
           </div>
+          <div className="border-t border-warn/15 bg-warn-soft px-6 pb-5 pt-4">
+            <div className="t-label text-warn">If the Spurs lose</div>
+            <p className="mt-1 font-bold text-ink">No refunds. The customer enjoyed their latte, and you still keep $3.26 of it.</p>
+          </div>
         </figure>
         </Reveal>
       </section>

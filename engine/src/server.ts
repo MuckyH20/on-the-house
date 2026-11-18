@@ -294,6 +294,25 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
     return { ok: true };
   });
 
+  // Claim-token balances per wallet, batched into one getMultipleAccountsInfo and cached for a few seconds.
+  const CLAIM_CACHE_MS = 15_000;
+  const claimCache = new Map<string, { at: number; balances: string[] }>();
+  async function claimBalances(wallet: string, mints: string[]): Promise<string[]> {
+    const key = `${wallet}:${mints.join(',')}`;
+    const hit = claimCache.get(key);
+    if (hit && Date.now() - hit.at < CLAIM_CACHE_MS) return hit.balances;
+    const owner = new PublicKey(wallet);
+    const infos = await chain.connection
+      .getMultipleAccountsInfo(mints.map((m) => claimAta(owner, new PublicKey(m))), 'confirmed')
+      .catch(() => null);
+    if (!infos) return hit?.balances ?? mints.map(() => '0');
+    // Token account layout: amount is a u64 at offset 64 (same for Token-2022 claim accounts).
+    const balances = infos.map((info) => (info && info.data.length >= 72 ? info.data.readBigUInt64LE(64).toString() : '0'));
+    claimCache.set(key, { at: Date.now(), balances });
+    if (claimCache.size > 5_000) claimCache.clear();
+    return balances;
+  }
+
   app.get('/wallets/:wallet/claims', async (req: FastifyRequest<{ Params: { wallet: string } }>, reply) => {
     const wallet = req.params.wallet;
     if (!isPubkey(wallet)) return reply.code(400).send({ error: 'invalid wallet address' });
@@ -323,13 +342,11 @@ export async function buildServer(d: Deps): Promise<FastifyInstance> {
         wc.paidOut = (BigInt(wc.paidOut) + BigInt(String(e.data.amount))).toString();
       }
     }
-    for (const wc of byCampaign.values()) {
-      const c = registry.get(wc.campaign)!;
-      const acct = claimAta(new PublicKey(wallet), new PublicKey(c.claimMint));
-      const bal = await chain.connection.getTokenAccountBalance(acct, 'confirmed').catch(() => null);
-      wc.claimBalance = bal?.value.amount ?? '0';
-    }
-    return { wallet, claims: [...byCampaign.values()].reverse() };
+    // Every claim balance in ONE RPC call, reused briefly: rewards pages poll this every few seconds.
+    const list = [...byCampaign.values()];
+    const balances = await claimBalances(wallet, list.map((wc) => registry.get(wc.campaign)!.claimMint));
+    list.forEach((wc, i) => (wc.claimBalance = balances[i] ?? '0'));
+    return { wallet, claims: list.reverse() };
   });
 
   // ---------------- SIMULATED venue admin (mock mode only) ----------------

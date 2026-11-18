@@ -121,8 +121,10 @@ async function on() {
     dataset: 'programs_with_logs',
     filter_function: filterBase64(),
     region: 'usa_east',
-    // Docs say sub-second-block networks need ≥ 5, but the free plan caps batches at 1 (API: "5 > 1").
-    dataset_batch_size: Number(process.env.QUICKNODE_BATCH_SIZE ?? 1),
+    // Solana devnet has sub-second blocks, so paid plans require a batch size of at least 5; with elastic batching
+    // that's only an upper bound and blocks still go out as soon as they exist. (The free plan caps it at 1:
+    // set QUICKNODE_BATCH_SIZE=1 there.)
+    dataset_batch_size: Number(process.env.QUICKNODE_BATCH_SIZE ?? 5),
     elastic_batch_enabled: true, // deliver at the tip without waiting for a full batch
     fix_block_reorgs: 0,
     keep_distance_from_tip: 0,

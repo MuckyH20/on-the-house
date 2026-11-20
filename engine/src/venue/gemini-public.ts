@@ -82,7 +82,8 @@ export class GeminiPublic implements MarketSource {
     const res = await this.get<EventsResponse>('/v1/prediction-markets/events?status=active&limit=100');
     for (const ev of res.data) {
       for (const c of ev.contracts) {
-        if (c.status !== 'active') continue;
+        // Only markets taking orders now: Gemini also lists "post_only" ones, where an instant buy (our hedge) is refused.
+        if (c.status !== 'active' || (c.marketState && c.marketState !== 'open')) continue;
         this.eventOf.set(c.instrumentSymbol, ev.ticker);
         out.push(toSummary(ev, c));
       }

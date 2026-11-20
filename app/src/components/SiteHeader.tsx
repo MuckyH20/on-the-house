@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from '@/components/Brand';
+import { Ticket } from 'lucide-react';
 import { SoundToggle } from '@/components/Sound';
 
 export { Logo };
@@ -19,9 +20,12 @@ export function SiteHeader() {
         night ? 'on-night border-white/10 bg-night/90 text-chalk' : 'border-line/80 bg-paper/85'
       }`}
     >
-      <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-5 sm:px-8">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-3.5 min-[380px]:gap-3 min-[380px]:px-5 sm:px-8">
         <Logo />
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          <Link href="/me" aria-label="My rewards" title="My rewards" className={`btn btn-sm hidden w-10 px-0 sm:inline-flex ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>
+            <Ticket className="h-[18px] w-[18px]" aria-hidden="true" />
+          </Link>
           <SoundToggle className={`btn btn-sm w-10 px-0 ${night ? 'btn-ghost-night' : 'btn-ghost'}`} />
           <Link href="/help" className={`btn btn-sm hidden min-[400px]:inline-flex ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>Help</Link>
           <Link href="/dashboard" className={`btn btn-sm ${night ? 'btn-ghost-night' : 'btn-ghost'}`}>My promos</Link>

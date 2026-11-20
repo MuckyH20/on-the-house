@@ -271,7 +271,11 @@ export default function PromoPage() {
       ) : null}
 
       <footer className="flex flex-col items-center gap-1 pt-4 text-center text-xs text-subtle">
-        <Link href={`/proof/${campaign}`} className="link-muted">How refunds are guaranteed</Link>
+        <span className="flex items-center gap-3">
+          <Link href={`/proof/${campaign}`} className="link-muted">How refunds are guaranteed</Link>
+          <span aria-hidden="true">·</span>
+          <Link href="/me" className="link-muted">My rewards</Link>
+        </span>
         <span className="flex items-center gap-1.5">Powered by <Mark size={16} className="text-ink" /> <b className="font-display text-base font-extrabold uppercase text-ink">On the House</b></span>
         <SoundToggle label className="link-muted mt-1 inline-flex items-center gap-1.5 no-underline" />
       </footer>

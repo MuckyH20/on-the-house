@@ -52,7 +52,7 @@ export default function Home() {
   return (
     <div className="landing -mt-6 sm:-mt-10">
       {/* ------------------------------------------------ Floodlit hero + match timeline */}
-      <section className="night on-night bleed">
+      <section className="night on-night bleed overflow-x-clip">
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-12 sm:px-8 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16 lg:pb-24">
           <div>
             <h1 className="t-display enter enter-1">Free if your team wins.</h1>

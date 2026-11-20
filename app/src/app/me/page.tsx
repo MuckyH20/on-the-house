@@ -59,7 +59,7 @@ export default function MePage() {
           </div>
         ) : (
           <Button onClick={account.login} disabled={!account.ready} variant="secondary" block>
-            Sign in to see rewards from your other devices
+            Sign in to see all your rewards
           </Button>
         )
       ) : null}
